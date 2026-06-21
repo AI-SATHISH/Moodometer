@@ -922,7 +922,17 @@ function postCheckinToCloud(rec){
   // still JSON.parses the body. Fire-and-forget: if it fails (offline,
   // blocked, etc.) the check-in is already safe in localStorage.
   fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(rec)})
-    .catch(()=>{ /* local copy already saved — silently skip */ });
+    .then(res=>{
+      if(!res.ok) console.error('postCheckinToCloud: HTTP',res.status,'— check-in saved locally only');
+      return res.text();
+    })
+    .then(text=>{
+      try{
+        const data=JSON.parse(text);
+        if(data && data.ok===false) console.error('postCheckinToCloud: script returned error —',data.error||text);
+      }catch(e){ console.error('postCheckinToCloud: non-JSON response —',text.slice(0,300)); }
+    })
+    .catch(err=>{ console.error('postCheckinToCloud: request failed —',err.message,'— check-in saved locally only'); });
 }
 
 async function syncFromCloud(){
@@ -930,8 +940,11 @@ async function syncFromCloud(){
   syncStatus='Syncing…';
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=list`);
-    const data=await res.json();
-    if(!data.ok||!Array.isArray(data.records)) throw new Error('bad response');
+    if(!res.ok){ throw new Error(`HTTP ${res.status}`); }
+    let data;
+    try{ data=await res.json(); }
+    catch(parseErr){ throw new Error('Response wasn\'t JSON — check Apps Script deployment is "Anyone" access and returns JSON'); }
+    if(!data.ok||!Array.isArray(data.records)){ throw new Error(data.error?`Script error: ${data.error}`:'Script responded but with no records array'); }
     const byId={};
     records.forEach(r=>byId[r.id]=r);
     data.records.forEach(r=>{
@@ -940,9 +953,10 @@ async function syncFromCloud(){
     });
     records=Object.values(byId).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
     saveRec();
-    syncStatus=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+    syncStatus=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${data.records.length} from sheet`;
   }catch(e){
-    syncStatus='Offline — showing this device\'s data only';
+    syncStatus=`Sync failed (${e.message||'unknown error'}) — showing this device's data only`;
+    console.error('syncFromCloud error:',e);
   }
 }
 
