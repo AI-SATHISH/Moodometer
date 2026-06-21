@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8"/>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Moodometer — Employee Wellbeing Tracker</title>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+
+  --bg:#f5f4f0; --surface:#fff; --surface2:#f0ede8; --border:#e2ddd6; --border2:#ccc7bf;
+
+  --text:#1a1916; --text2:#6b6760; --text3:#9e9a94;
+
+  --purple:#534AB7; --purple-l:#EEEDFE; --purple-m:#7F77DD;
+
+  --green:#2d8c5f; --green-l:#e6f5ee;
+
+  --red:#c0392b; --red-l:#fdecea;
+
+  --amber:#b86e00; --amber-l:#fff3e0;
+
+  --teal:#0F6E56; --teal-l:#E1F5EE;
+
+  --r:12px; --rsm:8px;
+
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;}
+
+.app{max-width:700px;margin:0 auto;padding:20px 16px 60px;}
+
+.screen{display:none;} .screen.active{display:block;}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+
+.logo{display:flex;align-items:center;gap:10px;}
+
+.logo-icon{width:36px;height:36px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;}
+
+.logo-text{font-size:16px;font-weight:600;}
+
+.logo-sub{font-size:11px;color:var(--text3);}
+
+.nav-btns{display:flex;gap:6px;flex-wrap:wrap;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;}
+
+.clabel{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:12px;}
+
+.field{margin-bottom:10px;}
+
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:4px;}
+
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--rsm);padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);transition:border-color .15s;}
+
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple);}
+
+textarea{resize:none;}
+
+select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%236b6760' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+
+.btn{cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:var(--rsm);padding:9px 16px;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+
+.btn:hover{background:var(--surface2);}
+
+.btn:active{transform:scale(.98);}
+
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+.btn-primary{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+.btn-primary:hover{background:#3C3489;border-color:#3C3489;}
+
+.btn-full{width:100%;justify-content:center;padding:12px;font-size:14px;}
+
+.btn-sm{padding:6px 13px;font-size:12px;}
+
+.btn-danger{background:var(--red-l);border-color:#f5b5b0;color:var(--red);}
+
+.btn-danger:hover{background:#fad8d6;}
+
+.btn-success{background:var(--green-l);border-color:#a8dfc4;color:var(--green);}
+
+.btn-success:hover{background:#c8edd9;}
+
+.btn-teal{background:var(--teal-l);border-color:#5DCAA5;color:var(--teal);}
+
+.btn-teal:hover{background:#9FE1CB;}
+
+.mood-grid{display:flex;gap:7px;flex-wrap:wrap;}
+
+.mood-btn{cursor:pointer;flex:1;min-width:78px;border:1.5px solid var(--border);border-radius:var(--r);padding:13px 6px;text-align:center;transition:all .15s;}
+
+.mood-btn:hover{border-color:var(--purple-m);background:var(--purple-l);}
+
+.mood-btn.selected{border-color:var(--purple);background:var(--purple-l);box-shadow:0 0 0 3px rgba(83,74,183,.1);}
+
+.mood-emoji{font-size:26px;display:block;margin-bottom:4px;transition:transform .15s;}
+
+/* ── Mood reaction animations ── */
+@keyframes moodBounce{0%{transform:scale(1) translateY(0);}30%{transform:scale(1.35) translateY(-10px) rotate(-8deg);}50%{transform:scale(1.15) translateY(-4px) rotate(6deg);}70%{transform:scale(1.3) translateY(-8px) rotate(-4deg);}100%{transform:scale(1.18) translateY(-3px) rotate(0);}}
+@keyframes moodNod{0%{transform:scale(1) rotate(0);}25%{transform:scale(1.2) rotate(-6deg);}50%{transform:scale(1.12) rotate(5deg);}75%{transform:scale(1.18) rotate(-3deg);}100%{transform:scale(1.15) rotate(0);}}
+@keyframes moodSettle{0%{transform:scale(1);}40%{transform:scale(1.25) translateY(-3px);}70%{transform:scale(0.95) translateY(1px);}100%{transform:scale(1.05);}}
+@keyframes moodTremble{0%{transform:scale(1) translateX(0);}20%{transform:scale(1.1) translateX(-3px) rotate(-3deg);}40%{transform:scale(1.1) translateX(3px) rotate(3deg);}60%{transform:scale(1.1) translateX(-2px) rotate(-2deg);}80%{transform:scale(1.1) translateX(2px) rotate(2deg);}100%{transform:scale(1.08) translateX(0) rotate(0);}}
+@keyframes moodDroop{0%{transform:scale(1) translateY(0) rotate(0);}30%{transform:scale(1.1) translateY(-4px);}60%{transform:scale(1) translateY(4px) rotate(4deg);}100%{transform:scale(1) translateY(6px) rotate(3deg);}}
+.mood-btn[data-mood="5"].selected .mood-emoji{animation:moodBounce .6s ease-out forwards;}
+.mood-btn[data-mood="4"].selected .mood-emoji{animation:moodNod .55s ease-out forwards;}
+.mood-btn[data-mood="3"].selected .mood-emoji{animation:moodSettle .45s ease-out forwards;}
+.mood-btn[data-mood="2"].selected .mood-emoji{animation:moodTremble .5s ease-out forwards;}
+.mood-btn[data-mood="1"].selected .mood-emoji{animation:moodDroop .6s ease-out forwards;}
+.mood-btn.selected{animation:moodPulse .5s ease-out;}
+@keyframes moodPulse{0%{box-shadow:0 0 0 0 rgba(83,74,183,.35);}100%{box-shadow:0 0 0 3px rgba(83,74,183,.1);}}
+@media (prefers-reduced-motion:reduce){.mood-emoji,.mood-btn.selected{animation:none!important;}}
+
+.mood-lbl{font-size:11px;font-weight:600;}
+
+/* ── Tile-based factors ── */
+
+.tile-section-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px;margin-bottom:4px;}
+
+.tile{cursor:pointer;border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;transition:all .15s;position:relative;}
+
+.tile:hover{border-color:var(--purple-m);background:var(--surface2);}
+
+.tile.open.pos{border-color:var(--green);background:var(--green-l);}
+
+.tile.open.neg{border-color:var(--red);background:var(--red-l);}
+
+.tile-icon{font-size:20px;margin-bottom:5px;}
+
+.tile-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1px;}
+
+.tile-hint{font-size:11px;color:var(--text3);}
+
+.tile-chev{position:absolute;top:11px;right:11px;font-size:13px;color:var(--text3);transition:transform .2s;}
+
+.tile.open .tile-chev{transform:rotate(180deg);}
+
+.tile-count{position:absolute;bottom:8px;right:10px;font-size:10px;font-weight:600;background:var(--purple);color:#fff;border-radius:8px;padding:1px 6px;display:none;}
+
+.tile-count.show{display:block;}
+
+.chip-tray{display:none;padding:10px 0 6px;flex-wrap:wrap;gap:5px;}
+
+.chip-tray.open{display:flex;}
+
+.chip{cursor:pointer;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text2);transition:all .12s;background:var(--surface);}
+
+.chip:hover.pos{border-color:var(--green);color:var(--green);}
+
+.chip:hover.neg{border-color:var(--red);color:var(--red);}
+
+.chip.sel.pos{background:var(--green-l);border-color:var(--green);color:#27500A;font-weight:500;}
+
+.chip.sel.neg{background:var(--red-l);border-color:var(--red);color:#791F1F;font-weight:500;}
+
+/* ── Dashboard ── */
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;margin-bottom:14px;}
+
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+
+.stat-val{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;}
+
+.stat-val.danger{color:var(--red);}
+
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;font-weight:500;}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;gap:0;}
+
+.tab{cursor:pointer;padding:9px 14px;font-size:13px;font-weight:500;border-bottom:2px solid transparent;color:var(--text3);white-space:nowrap;transition:all .15s;margin-bottom:-1px;}
+
+.tab:hover{color:var(--text2);}
+
+.tab.active{border-bottom-color:var(--purple);color:var(--purple);}
+
+.tab-pane{display:none;} .tab-pane.active{display:block;}
+
+.pbar-wrap{margin-bottom:10px;display:flex;align-items:center;gap:9px;}
+
+.pbar-label{font-size:13px;color:var(--text2);flex-shrink:0;}
+
+.pbar-label.w70{width:70px;}
+
+.pbar-label.w150{width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.pbar-label.w180{width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.pbar-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+
+.pbar-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+
+.pbar-count{font-size:12px;color:var(--text3);width:52px;text-align:right;flex-shrink:0;font-family:'DM Mono',monospace;}
+
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:12px;font-weight:600;}
+
+.b-pos{background:var(--green-l);color:#27500A;}
+
+.b-neg{background:var(--red-l);color:#791F1F;}
+
+.b-warn{background:var(--amber-l);color:#633806;}
+
+.b-info{background:var(--purple-l);color:#26215C;}
+
+.b-teal{background:var(--teal-l);color:var(--teal);}
+
+.log-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;}
+
+.log-entry.alert{border-color:#f5b5b0;background:#fffafa;}
+
+.log-entry.good{border-color:#a8dfc4;}
+
+.log-meta{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px;gap:8px;}
+
+.log-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+
+.log-chip{font-size:11px;padding:2px 8px;border-radius:10px;}
+
+.alert-banner{background:#fffafa;border:1px solid #f5b5b0;border-radius:var(--r);padding:15px;margin-bottom:12px;}
+
+.alert-title{display:flex;align-items:center;gap:8px;color:var(--red);font-weight:600;font-size:14px;margin-bottom:10px;}
+
+.alert-row{background:var(--red-l);border-radius:var(--rsm);padding:9px 12px;margin-bottom:7px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+
+/* ── Action Tracker ── */
+
+.action-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;align-items:flex-start;gap:12px;}
+
+.action-item.resolved{opacity:.55;border-style:dashed;}
+
+.action-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+
+.action-dot.open{background:var(--red);}
+
+.action-dot.inprogress{background:var(--amber);}
+
+.action-dot.resolved{background:var(--green);}
+
+.action-form{background:var(--surface2);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+
+.priority-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em;}
+
+.p-high{background:var(--red-l);color:var(--red);}
+
+.p-medium{background:var(--amber-l);color:var(--amber);}
+
+.p-low{background:var(--green-l);color:var(--green);}
+
+/* ── Period tabs ── */
+
+.period-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+
+.ptab{cursor:pointer;padding:6px 15px;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;color:var(--text2);transition:all .15s;}
+
+.ptab:hover{border-color:var(--purple-m);color:var(--purple);}
+
+.ptab.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+/* ── Deploy ── */
+
+.deploy-opt{border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;}
+
+.deploy-num{width:28px;height:28px;border-radius:50%;background:var(--purple-l);color:var(--purple);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.qr-box{background:var(--surface2);border-radius:var(--r);padding:20px;text-align:center;}
+
+.done-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:32px 24px;text-align:center;}
+
+.misuse-note{background:#fffbea;border:1px solid #f5d78e;border-radius:var(--r);padding:13px 15px;font-size:13px;color:#7a5c00;line-height:1.6;margin-bottom:12px;}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+@media(max-width:480px){.two-col{grid-template-columns:1fr;}.mood-btn{min-width:60px;}.pbar-label.w180{width:120px;}.tile-grid{grid-template-columns:repeat(2,1fr);}}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- HEADER -->
+
+<div class="header">
+
+  <div class="logo">
+
+    <div class="logo-icon">😊</div>
+
+    <div><div class="logo-text">Moodometer</div><div class="logo-sub">Employee Wellbeing Tracker</div></div>
+
+  </div>
+
+  <div class="nav-btns">
+
+    <button class="btn btn-sm" onclick="goCheckin()">Check-in</button>
+
+    <button class="btn btn-sm" id="nav-hr-dash" onclick="showDash()">HR Dashboard</button>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ CHECK-IN ═══════════════ -->
+
+<div id="screen-checkin" class="screen active">
+
+  <div id="already-done-block" style="display:none;" class="done-card">
+
+    <div style="font-size:44px;margin-bottom:12px;">☀️</div>
+
+    <p style="font-size:18px;font-weight:600;margin-bottom:6px;">Already checked in today</p>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:6px;">Come back tomorrow. One entry per day keeps the data honest.</p>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:20px;">Today's mood: <span id="todays-recap" style="font-weight:600;"></span></p>
+
+    <button class="btn btn-primary" onclick="startAnotherCheckin()">Submit another response →</button>
+
+  </div>
+
+  <div id="step-identity-block">
+
+    <p style="font-size:22px;font-weight:600;margin-bottom:3px;">Good <span id="greet"></span> 👋</p>
+
+    <p style="font-size:13px;color:var(--text2);margin-bottom:18px;" id="checkin-date"></p>
+
+    <div class="card">
+
+      <div class="clabel">Step 1 of 3 — Your details</div>
+
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">Department and city are required so HR can route the right support to the right team. Employee ID, name, and project/team are optional — leave them blank if you'd rather not share.</p>
+
+      <div class="two-col">
+
+        <div class="field"><label>Employee ID (optional)</label><input id="emp-id" placeholder="Prefer not to say"/></div>
+
+        <div class="field"><label>Name (optional)</label><input id="emp-name" placeholder="Prefer not to say"/></div>
+
+      </div>
+
+      <div class="two-col">
+
+        <div class="field"><label>Department *</label>
+
+          <select id="emp-dept" required><option value="">Select department</option><option>HR</option><option>Operations</option><option>Finance</option><option>Sales & Marketing</option><option>IT</option><option>Production</option><option>Admin</option><option>Logistics</option><option>Customer Service</option><option>Quality</option><option>R&D</option><option>Legal</option></select>
+
+        </div>
+
+        <div class="field"><label>City / Location *</label>
+
+          <select id="emp-city" required><option value="">Select city</option><option>Chennai</option><option>Coimbatore</option><option>Madurai</option><option>Trichy</option><option>Salem</option><option>Tirunelveli</option><option>Vellore</option><option>Erode</option><option>Bengaluru</option><option>Mumbai</option><option>Delhi</option><option>Hyderabad</option><option>Pune</option><option>Kolkata</option><option>Other</option></select>
+
+        </div>
+
+      </div>
+
+      <div class="field"><label>Project / Team (optional)</label><input id="emp-project" placeholder="e.g. Project Phoenix, Support Team"/></div>
+
+      <p id="identity-error" style="display:none;font-size:12px;color:var(--red);margin:-4px 0 10px;">Please fill in Department and City before continuing.</p>
+
+      <button class="btn btn-primary btn-full" onclick="startCheckin()">Begin today's check-in →</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ MOOD ═══════════════ -->
+
+<div id="screen-mood" class="screen">
+
+  <div class="card">
+
+    <div class="clabel">Step 2 of 3 — How are you feeling today?</div>
+
+    <p style="font-size:13px;color:var(--text3);margin-bottom:14px;">Be honest — your response is confidential and helps HR take the right actions.</p>
+
+    <div class="mood-grid">
+
+      <div class="mood-btn" data-mood="5" data-label="Excellent" onclick="selectMood(this)"><span class="mood-emoji">😄</span><span class="mood-lbl" style="color:#2d8c5f;">Excellent</span></div>
+
+      <div class="mood-btn" data-mood="4" data-label="Good" onclick="selectMood(this)"><span class="mood-emoji">🙂</span><span class="mood-lbl" style="color:#1D9E75;">Good</span></div>
+
+      <div class="mood-btn" data-mood="3" data-label="Neutral" onclick="selectMood(this)"><span class="mood-emoji">😐</span><span class="mood-lbl" style="color:#888780;">Neutral</span></div>
+
+      <div class="mood-btn" data-mood="2" data-label="Stressed" onclick="selectMood(this)"><span class="mood-emoji">😟</span><span class="mood-lbl" style="color:#b86e00;">Stressed</span></div>
+
+      <div class="mood-btn" data-mood="1" data-label="Burnout" onclick="selectMood(this)"><span class="mood-emoji">😔</span><span class="mood-lbl" style="color:#c0392b;">Burnout</span></div>
+
+    </div>
+
+    <button class="btn btn-primary btn-full" id="mood-next" onclick="goFactors()" disabled style="margin-top:14px;">Continue →</button>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ FACTORS ═══════════════ -->
+
+<div id="screen-factors" class="screen">
+
+  <div class="card">
+
+    <div class="clabel">Step 3 of 3 — What's influencing your mood?</div>
+
+    <p style="font-size:13px;color:var(--text3);margin-bottom:14px;">Tap a tile to expand, then select any chips that apply. Pick as many as feel right.</p>
+
+    <div id="factor-area"></div>
+
+    <div class="field" style="margin-top:12px;"><label>Anything else on your mind? (optional)</label><textarea id="freetext" rows="3" placeholder="Share freely — only HR sees this..."></textarea></div>
+
+    <div class="field" style="margin-top:14px;padding:12px 14px;background:var(--surface2);border-radius:var(--rsm);">
+
+      <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-weight:500;color:var(--text);">
+
+        <input type="checkbox" id="want-contact" style="width:auto;margin-top:3px;" onchange="document.getElementById('contact-info-field').style.display=this.checked?'block':'none';"/>
+
+        <span>I'd like someone from HR to reach out to me directly about this</span>
+
+      </label>
+
+      <p style="font-size:11px;color:var(--text3);margin:6px 0 0 23px;">If checked, the phone or email you enter below is shared with HR for direct follow-up.</p>
+
+      <div id="contact-info-field" style="display:none;margin:10px 0 0 23px;">
+
+        <input id="contact-info" placeholder="Phone or email HR can reach you on"/>
+
+      </div>
+
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="submitCheckin()" style="margin-top:10px;">Submit check-in ✓</button>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ THANKS ═══════════════ -->
+
+<div id="screen-thanks" class="screen">
+
+  <div style="text-align:center;padding:36px 0 24px;">
+
+    <div style="font-size:52px;margin-bottom:14px;" id="thanks-emoji">✅</div>
+
+    <p style="font-size:22px;font-weight:600;margin-bottom:7px;">Check-in recorded!</p>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:8px;" id="thanks-msg"></p>
+
+    <div id="alert-notice" style="display:none;background:var(--red-l);border:1px solid #f5b5b0;border-radius:var(--r);padding:13px;margin:14px auto;max-width:420px;font-size:13px;color:var(--red);text-align:left;line-height:1.6;"></div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+
+<div id="screen-dashboard" class="screen">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:9px;">
+
+    <div><p style="font-size:22px;font-weight:600;">HR Dashboard</p><p style="font-size:13px;color:var(--text3);" id="dash-sub"></p></div>
+
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+
+      <button class="btn btn-success btn-sm" onclick="exportCSV()">⬇ CSV</button>
+
+      <button class="btn btn-sm" onclick="showScreen('screen-deploy')">📱 Deploy</button>
+
+    </div>
+
+  </div>
+
+  <div class="period-tabs">
+
+    <div class="ptab active" onclick="setPeriod('current',this)">Current 15 days</div>
+
+    <div class="ptab" onclick="setPeriod('prev',this)">Previous 15 days</div>
+
+    <div class="ptab" onclick="setPeriod('all',this)">All time</div>
+
+  </div>
+
+  <div class="misuse-note">📊 <strong>Anti-misuse:</strong> Processes activate on validated patterns only — consistent signals across 3+ days or 2+ employees. Single-day entries are logged but not acted upon until confirmed over the period.</div>
+
+  <div class="stats-grid">
+
+    <div class="stat-card"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Check-ins</div></div>
+
+    <div class="stat-card"><div class="stat-val" id="s-avg">—</div><div class="stat-lbl">Avg mood</div></div>
+
+    <div class="stat-card"><div class="stat-val" id="s-today">0</div><div class="stat-lbl">Today</div></div>
+
+    <div class="stat-card"><div class="stat-val danger" id="s-alert">0</div><div class="stat-lbl">Need attention</div></div>
+
+    <div class="stat-card"><div class="stat-val" id="s-actions" style="color:var(--amber);">0</div><div class="stat-lbl">Open actions</div></div>
+
+  </div>
+
+  <div id="burnout-banner" style="display:none;" class="alert-banner">
+
+    <div class="alert-title">⚠ Employees requiring immediate follow-up</div>
+
+    <div id="burnout-list"></div>
+
+  </div>
+
+  <div class="tabs">
+
+    <div class="tab active" onclick="switchTab('t-overview')">Overview</div>
+
+    <div class="tab" onclick="switchTab('t-trend')">15-day trend</div>
+
+    <div class="tab" onclick="switchTab('t-factors')">Factors</div>
+
+    <div class="tab" onclick="switchTab('t-segments')">Segments</div>
+
+    <div class="tab" onclick="switchTab('t-log')">Log</div>
+
+    <div class="tab" onclick="switchTab('t-actions')">Actions 🔴</div>
+
+    <div class="tab" onclick="switchTab('t-ai')">AI plan ↗</div>
+
+  </div>
+
+  <!-- Overview -->
+
+  <div class="tab-pane active" id="t-overview">
+
+    <div class="card"><div class="clabel">Mood distribution</div><div id="mood-dist"></div></div>
+
+    <div class="card"><div class="clabel">Mood score — last 15 days</div><canvas id="trend-chart" height="130"></canvas></div>
+
+    <div class="two-col">
+
+      <div class="card"><div class="clabel">Top positive driver</div><p id="top-pos" style="font-size:14px;color:var(--green);font-weight:500;">—</p></div>
+
+      <div class="card"><div class="clabel">Top concern</div><p id="top-neg" style="font-size:14px;color:var(--red);font-weight:500;">—</p></div>
+
+    </div>
+
+  </div>
+
+  <!-- 15-day trend -->
+
+  <div class="tab-pane" id="t-trend">
+
+    <div class="card">
+
+      <div class="clabel">Daily mood heatmap</div>
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px;" id="hm-dates"></div>
+
+      <div id="heatmap" style="display:grid;grid-template-columns:repeat(15,1fr);gap:3px;"></div>
+
+      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;font-size:11px;color:var(--text3);">
+
+        <span>😄 Excellent</span><span>🙂 Good</span><span>😐 Neutral</span><span>😟 Stressed</span><span>😔 Burnout</span><span>◻ No data</span>
+
+      </div>
+
+    </div>
+
+    <div class="card"><div class="clabel">Period comparison</div><div id="period-compare"></div></div>
+
+    <div class="card"><div class="clabel">15-day action summary</div><div id="action-summary"></div></div>
+
+  </div>
+
+  <!-- Factors -->
+
+  <div class="tab-pane" id="t-factors">
+
+    <div class="card"><div class="clabel">Top positive factors</div><div id="factor-pos"></div></div>
+
+    <div class="card"><div class="clabel">Top negative factors</div><div id="factor-neg"></div></div>
+
+    <div class="card">
+
+      <div class="clabel">Persistence tracker — repeated negatives</div>
+
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px;">Same factor cited by the same person on multiple days — strongest signal of a genuine issue.</p>
+
+      <div id="factor-persist"></div>
+
+    </div>
+
+  </div>
+
+  <!-- Segments -->
+
+  <div class="tab-pane" id="t-segments">
+
+    <div class="card"><div class="clabel">By department</div><div id="seg-dept"></div></div>
+
+    <div class="card"><div class="clabel">By city / location</div><div id="seg-city"></div></div>
+
+    <div class="card"><div class="clabel">By project / team</div><div id="seg-project"></div></div>
+
+  </div>
+
+  <!-- Log -->
+
+  <div class="tab-pane" id="t-log">
+
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+
+      <select id="f-mood" onchange="renderDash()" style="width:auto;padding:6px 10px;font-size:12px;"><option value="">All moods</option><option value="5">Excellent</option><option value="4">Good</option><option value="3">Neutral</option><option value="2">Stressed</option><option value="1">Burnout</option></select>
+
+      <select id="f-dept" onchange="renderDash()" style="width:auto;padding:6px 10px;font-size:12px;"><option value="">All depts</option></select>
+
+      <select id="f-city" onchange="renderDash()" style="width:auto;padding:6px 10px;font-size:12px;"><option value="">All cities</option></select>
+
+      <select id="f-proj" onchange="renderDash()" style="width:auto;padding:6px 10px;font-size:12px;"><option value="">All projects</option></select>
+
+      <button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="clearData()">🗑 Clear all</button>
+
+    </div>
+
+    <div id="checkin-log"></div>
+
+  </div>
+
+  <!-- Action Tracker -->
+
+  <div class="tab-pane" id="t-actions">
+
+    <div class="action-form">
+
+      <div class="clabel" style="margin-bottom:10px;">Log a new HR action</div>
+
+      <div class="two-col" style="margin-bottom:8px;">
+
+        <div class="field" style="margin:0;"><label>Action title</label><input id="act-title" placeholder="e.g. Manager coaching session"/></div>
+
+        <div class="field" style="margin:0;"><label>Linked factor / trigger</label><input id="act-trigger" placeholder="e.g. Unclear instructions — IT dept"/></div>
+
+      </div>
+
+      <div class="two-col" style="margin-bottom:8px;">
+
+        <div class="field" style="margin:0;"><label>Owner</label><input id="act-owner" placeholder="HR name or designation"/></div>
+
+        <div class="field" style="margin:0;"><label>Due date</label><input id="act-due" type="date"/></div>
+
+      </div>
+
+      <div class="two-col" style="margin-bottom:10px;">
+
+        <div class="field" style="margin:0;"><label>Priority</label>
+
+          <select id="act-priority"><option value="high">High — immediate</option><option value="medium" selected>Medium — this week</option><option value="low">Low — this period</option></select>
+
+        </div>
+
+        <div class="field" style="margin:0;"><label>HR process type</label>
+
+          <select id="act-type"><option value="1on1">1:1 employee check-in</option><option value="manager">Manager alert / coaching</option><option value="pulse">Pulse survey</option><option value="focusgroup">Focus group</option><option value="policy">Policy review</option><option value="ld">L&D intervention</option><option value="retention">Retention plan</option><option value="other">Other</option></select>
+
+        </div>
+
+      </div>
+
+      <div class="field" style="margin-bottom:10px;"><label>Notes</label><textarea id="act-notes" rows="2" placeholder="What exactly will be done? What's the expected outcome?"></textarea></div>
+
+      <button class="btn btn-primary btn-sm" onclick="addAction()">+ Log action</button>
+
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:7px;">
+
+      <p style="font-size:13px;font-weight:500;color:var(--text2);">All logged actions</p>
+
+      <div style="display:flex;gap:6px;">
+
+        <select id="act-filter" onchange="renderActions()" style="width:auto;padding:6px 10px;font-size:12px;"><option value="">All statuses</option><option value="open">Open</option><option value="inprogress">In progress</option><option value="resolved">Resolved</option></select>
+
+      </div>
+
+    </div>
+
+    <div id="action-list"></div>
+
+  </div>
+
+  <!-- AI plan -->
+
+  <div class="tab-pane" id="t-ai">
+
+    <div class="card">
+
+      <div class="clabel">AI-powered 15-day action plan</div>
+
+      <p style="font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.6;">Claude analyses all check-ins for the period — patterns, persistent negatives, department and project signals — and generates a structured HR action plan.</p>
+
+      <button class="btn btn-primary" onclick="runAI()" id="ai-btn">✦ Generate action plan ↗</button>
+
+      <div id="ai-output" style="margin-top:16px;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════ DEPLOY ═══════════════ -->
+
+<div id="screen-deploy" class="screen">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+
+    <p style="font-size:22px;font-weight:600;">Deploy this app</p>
+
+    <button class="btn btn-sm" onclick="showDash()">← Back</button>
+
+  </div>
+
+  <div class="card">
+
+    <div class="clabel">QR code — scan to open check-in</div>
+
+    <p style="font-size:13px;color:var(--text3);margin-bottom:12px;">Print and place at office entrance, canteen, workstations, or notice boards. Employees scan once daily.</p>
+
+    <div class="qr-box">
+
+      <canvas id="qr-canvas" width="190" height="190" style="display:block;margin:0 auto 10px;background:#fff;border-radius:8px;"></canvas>
+
+      <p style="font-size:11px;color:var(--text3);margin-bottom:12px;word-break:break-all;" id="qr-url"></p>
+
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+
+        <button class="btn btn-primary btn-sm" onclick="dlQR()">⬇ Download QR</button>
+
+        <button class="btn btn-sm" onclick="copyUrl()">⧉ Copy link</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="deploy-opt"><div class="deploy-num">1</div><div><p style="font-weight:600;margin-bottom:3px;">GitHub Pages — best for teams</p><p style="font-size:13px;color:var(--text2);margin-bottom:5px;">Save as index.html, push to GitHub repo, enable Pages in Settings. Free permanent URL across all locations.</p><a href="https://pages.github.com" target="_blank" style="font-size:13px;color:var(--purple);">pages.github.com →</a></div></div>
+
+  <div class="deploy-opt"><div class="deploy-num">2</div><div><p style="font-weight:600;margin-bottom:3px;">Netlify Drop — fastest</p><p style="font-size:13px;color:var(--text2);margin-bottom:5px;">Drag this file to netlify.com/drop. Live in 30 seconds, free forever.</p><a href="https://netlify.com/drop" target="_blank" style="font-size:13px;color:var(--purple);">netlify.com/drop →</a></div></div>
+
+  <div class="deploy-opt"><div class="deploy-num">3</div><div><p style="font-weight:600;margin-bottom:3px;">Kiosk tablet — fully offline</p><p style="font-size:13px;color:var(--text2);margin-bottom:5px;">Open in Chrome on a shared tablet, "Add to Home Screen". Runs with zero internet. HR reviews weekly on same device. <span class="badge b-pos">No server needed</span></p></div></div>
+
+  <div class="card" style="margin-top:4px;">
+
+    <div class="clabel">📲 Daily check-in reminder</div>
+
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Turn on notifications so this device gets a daily nudge to check in. This is a broadcast reminder — since check-ins are anonymous, everyone gets the same message rather than a personal one.</p>
+
+    <button class="btn btn-primary btn-sm" id="notif-btn" onclick="enableNotifications()">🔔 Enable daily reminder</button>
+
+    <p style="font-size:11px;color:var(--text3);margin-top:8px;" id="notif-status"></p>
+
+  </div>
+
+  <div class="card" style="background:#fffbea;border-color:#f5d78e;margin-top:4px;">
+
+    <p style="font-size:13px;font-weight:600;color:#7a5c00;margin-bottom:5px;">🔒 Privacy & data</p>
+
+    <p style="font-size:13px;color:#7a5c00;line-height:1.7;">Check-ins are anonymous by design — no name, login, or email is collected. A random ID generated on each device lets HR spot repeated patterns without knowing who's behind them. Employees can optionally ask HR to reach out directly; only then is contact info shared. All data is stored in browser local storage on this device only — nothing is sent to an external server in this version.</p>
+
+  </div>
+
+</div>
+
+</div><!-- /app -->
+
+<script>
+
+// ═══════════════════════════════════════
+
+// CONSTANTS
+
+// ═══════════════════════════════════════
+
+const MOODS={5:{label:'Excellent',emoji:'😄',color:'#2d8c5f',bg:'#e6f5ee'},4:{label:'Good',emoji:'🙂',color:'#1D9E75',bg:'#E1F5EE'},3:{label:'Neutral',emoji:'😐',color:'#888780',bg:'#F1EFE8'},2:{label:'Stressed',emoji:'😟',color:'#b86e00',bg:'#fff3e0'},1:{label:'Burnout',emoji:'😔',color:'#c0392b',bg:'#fdecea'}};
+
+const MC={5:'#2d8c5f',4:'#1D9E75',3:'#aaa89f',2:'#e0960a',1:'#c0392b'};
+
+const ACT_TYPES={
+
+  '1on1':'1:1 check-in','manager':'Manager coaching','pulse':'Pulse survey',
+
+  'focusgroup':'Focus group','policy':'Policy review','ld':'L&D intervention',
+
+  'retention':'Retention plan','other':'Other'
+
+};
+
+const TILES={
+
+  pos:[
+
+    {icon:'🏆',name:'Recognition',hint:'appreciation & growth',chips:['Received appreciation','Promotion/increment news','Positive appraisal feedback','Award or certificate received','Career path clarified','Mentoring or coaching received','Milestone completed']},
+
+    {icon:'🤝',name:'Team & manager',hint:'relationships at work',chips:['Great team support','Manager showed empathy','Felt included in decisions','Celebrated a win together','Good peer collaboration','Open-door moment with leader']},
+
+    {icon:'✅',name:'Work quality',hint:'clarity & productivity',chips:['Productive day','Clear goals given','Interesting task assigned','No unnecessary meetings','Good work-life balance today','Resources provided on time']},
+
+    {icon:'😊',name:'Personal',hint:'health & life outside work',chips:['Feeling energetic','Smooth commute today','Good health','Personal celebration','Resolved a long-pending concern','Positive news from management']},
+
+  ],
+
+  neg:[
+
+    {icon:'🔥',name:'Workload',hint:'pressure & deadlines',chips:['Excessive workload','Unrealistic deadline','Last-minute task dumped','Forced overtime','No time for lunch or break','Understaffed team','Project scope keeps changing']},
+
+    {icon:'🤷',name:'Fairness',hint:'recognition & equity',chips:['Effort not acknowledged','Unfair task distribution','Passed over for opportunity','Pay concern or delay','Harsh or no feedback','Favouritism observed','Promises not kept']},
+
+    {icon:'💬',name:'Communication',hint:'clarity & direction',chips:['Unclear instructions','Target keeps changing','Too many meetings','Important info not shared','Role confusion','No feedback on my work','Decisions made without team']},
+
+    {icon:'👥',name:'Relationships',hint:'people & culture',chips:['Conflict with colleague','Manager was dismissive','Rude or bullying behaviour','Excluded from discussion','Toxic or gossip environment','Feel isolated at work','Micromanagement']},
+
+    {icon:'⚙️',name:'Systems',hint:'tools & processes',chips:['System or ERP downtime','Process too slow or rigid','Equipment or tools lacking','Safety concern at workplace','Facility or hygiene issue','Insufficient training provided']},
+
+    {icon:'🏠',name:'Personal',hint:'outside of work',chips:['Health concern','Family stress','Long or difficult commute','Financial worry','Fatigue or poor sleep','Personal loss or grief']},
+
+  ]
+
+};
+
+let state={dept:'',city:'',project:'',mood:null,moodLabel:'',factors:[],freetext:'',wantsContact:false,contactInfo:'',allowAnother:false};
+
+let records=[], actions=[], activePeriod='current';
+
+// ═══════════════════════════════════════
+// ANONYMOUS DEVICE ID
+// No name, no login. A random ID is generated once per browser/device
+// and reused silently so HR can spot repeated patterns from "the same
+// person" without ever knowing who that person is. Clearing browser
+// data or switching devices starts a fresh, unlinked identity — an
+// accepted tradeoff in exchange for genuine anonymity.
+// ═══════════════════════════════════════
+function getDeviceId(){
+  let id=null;
+  try{id=localStorage.getItem('mood_device_id');}catch(e){}
+  if(!id){
+    id='anon-'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+    try{localStorage.setItem('mood_device_id',id);}catch(e){}
+  }
+  return id;
+}
+const DEVICE_ID=getDeviceId();
+
+try{records=JSON.parse(localStorage.getItem('mood_v5')||'[]');}catch(e){}
+
+try{actions=JSON.parse(localStorage.getItem('mood_actions')||'[]');}catch(e){}
+
+function saveRec(){try{localStorage.setItem('mood_v5',JSON.stringify(records));}catch(e){}}
+
+function saveAct(){try{localStorage.setItem('mood_actions',JSON.stringify(actions));}catch(e){}}
+
+// ═══════════════════════════════════════
+// CLOUD SYNC (Google Sheet via Apps Script)
+// localStorage stays the source of truth for "did THIS device already
+// check in today" and for instant UI updates. The Apps Script endpoint
+// is layered on top so the HR dashboard can also see check-ins
+// submitted from other devices/browsers, merged in by record id.
+// ═══════════════════════════════════════
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxRPPJHhilj8hFEE-sxCR6uHBZDLbr2ICTrYf122L55UHzxnVWqf8_breYh_4lVgMiUcw/exec';
+let syncStatus='';
+
+function postCheckinToCloud(rec){
+  if(!APPS_SCRIPT_URL) return;
+  // text/plain avoids a CORS preflight against Apps Script; the server
+  // still JSON.parses the body. Fire-and-forget: if it fails (offline,
+  // blocked, etc.) the check-in is already safe in localStorage.
+  fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(rec)})
+    .catch(()=>{ /* local copy already saved — silently skip */ });
+}
+
+async function syncFromCloud(){
+  if(!APPS_SCRIPT_URL) return;
+  syncStatus='Syncing…';
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=list`);
+    const data=await res.json();
+    if(!data.ok||!Array.isArray(data.records)) throw new Error('bad response');
+    const byId={};
+    records.forEach(r=>byId[r.id]=r);
+    data.records.forEach(r=>{
+      r.id=Number(r.id)||r.id; r.mood=Number(r.mood);
+      byId[r.id]=r;
+    });
+    records=Object.values(byId).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+    saveRec();
+    syncStatus=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(e){
+    syncStatus='Offline — showing this device\'s data only';
+  }
+}
+
+// ═══════════════════════════════════════
+
+// NAV
+
+// ═══════════════════════════════════════
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+const HR_DASHBOARD_PASSWORD='Urban@2026';
+let hrUnlocked=false; // stays unlocked only for this browser tab/session — resets on reload
+const KIOSK_MODE=new URLSearchParams(window.location.search).get('via')==='qr';
+
+function showDash(){
+
+  if(KIOSK_MODE){ alert('HR Dashboard isn\'t available from the check-in QR link. Open the app directly to access it.'); return; }
+
+  if(!hrUnlocked){
+
+    const entered=prompt('Enter HR Dashboard password:');
+
+    if(entered===null) return; // user cancelled
+
+    if(entered!==HR_DASHBOARD_PASSWORD){ alert('Incorrect password.'); return; }
+
+    hrUnlocked=true;
+
+  }
+
+  showScreen('screen-dashboard');renderDash();syncFromCloud().then(renderDash);
+
+}
+
+function goCheckin(){
+
+  showScreen('screen-checkin');
+
+  document.getElementById('already-done-block').style.display='none';
+
+  document.getElementById('step-identity-block').style.display='block';
+
+  document.getElementById('identity-error').style.display='none';
+
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+
+  state.mood=null; state.allowAnother=false; document.getElementById('mood-next').disabled=true;
+
+}
+
+// Lets someone explicitly submit a second (or third...) check-in today,
+// bypassing the one-entry-per-day guard for this one pass through the flow.
+// Dept/city/project/name were already captured on their first check-in
+// today, so this skips straight to mood instead of re-asking for them.
+function startAnotherCheckin(){
+
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+
+  state.mood=null; state.allowAnother=true; document.getElementById('mood-next').disabled=true;
+
+  showScreen('screen-mood');
+
+}
+
+// ═══════════════════════════════════════
+
+// PERIOD HELPERS
+
+// ═══════════════════════════════════════
+
+function getPeriod(p){
+
+  const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+
+  if(p==='all') return {start:new Date('2020-01-01'),end:new Date(today.getTime()+86400000)};
+
+  const dayN=Math.floor((today-new Date(today.getFullYear(),0,1))/86400000)%15;
+
+  const pStart=new Date(today); pStart.setDate(today.getDate()-dayN);
+
+  if(p==='current') return {start:pStart,end:new Date(today.getTime()+86400000)};
+
+  const pEnd=new Date(pStart); pEnd.setDate(pStart.getDate()-1);
+
+  const pS2=new Date(pEnd); pS2.setDate(pEnd.getDate()-14);
+
+  return {start:pS2,end:new Date(pEnd.getTime()+86400000)};
+
+}
+
+function filterP(recs,p){const{start,end}=getPeriod(p);return recs.filter(r=>{const d=new Date(r.ts);return d>=start&&d<end;});}
+
+function fmtD(d){return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+
+function fmtDT(ts){return new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+
+function todayStr(){return new Date().toDateString();}
+
+function alreadyIn(){
+
+  return records.find(r=>r.deviceId===DEVICE_ID&&new Date(r.ts).toDateString()===todayStr());
+
+}
+
+// ═══════════════════════════════════════
+
+// CHECK-IN FLOW
+
+// ═══════════════════════════════════════
+
+function startCheckin(){
+
+  const ex=alreadyIn();
+
+  if(ex&&!state.allowAnother){
+
+    document.getElementById('step-identity-block').style.display='none';
+
+    document.getElementById('already-done-block').style.display='block';
+
+    const m=MOODS[ex.mood];
+
+    const sp=document.getElementById('todays-recap');
+
+    sp.textContent=`${m.emoji} ${m.label}`; sp.style.color=m.color;
+
+    return;
+
+  }
+
+  const dept=document.getElementById('emp-dept').value;
+
+  const city=document.getElementById('emp-city').value;
+
+  const project=document.getElementById('emp-project').value.trim();
+
+  const err=document.getElementById('identity-error');
+
+  if(!dept||!city){ err.style.display='block'; return; }
+
+  err.style.display='none';
+
+  state.empId=document.getElementById('emp-id').value.trim()||'Prefer not to say';
+
+  state.name=document.getElementById('emp-name').value.trim()||'Prefer not to say';
+
+  state.dept=dept;
+
+  state.city=city;
+
+  state.project=project||'General';
+
+  showScreen('screen-mood');
+
+}
+
+function selectMood(el){
+
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+
+  // Force the animation to replay even if this emoji was already
+  // selected before: removing+reflowing+re-adding the class restarts
+  // any CSS animation tied to .selected.
+  const emoji=el.querySelector('.mood-emoji');
+
+  emoji.style.animation='none';
+
+  void emoji.offsetWidth; // reflow — forces the browser to forget the old animation state
+
+  emoji.style.animation='';
+
+  el.classList.add('selected');
+
+  state.mood=parseInt(el.dataset.mood);
+
+  state.moodLabel=el.dataset.label;
+
+  document.getElementById('mood-next').disabled=false;
+
+}
+
+function goFactors(){
+
+  if(!state.mood) return;
+
+  buildFactorArea();
+
+  document.getElementById('freetext').value='';
+
+  document.getElementById('want-contact').checked=false;
+
+  document.getElementById('contact-info').value='';
+
+  document.getElementById('contact-info-field').style.display='none';
+
+  showScreen('screen-factors');
+
+}
+
+function buildFactorArea(){
+
+  const isPos=state.mood>=4, isNeg=state.mood<=2;
+
+  let html='';
+
+  const buildSection=(type,tiles,label,labelColor)=>{
+
+    html+=`<div class="tile-section-label" style="color:${labelColor};">${label}</div>`;
+
+    html+=`<div class="tile-grid">`;
+
+    tiles.forEach((g,i)=>{
+
+      const id=`tile-${type}-${i}`;
+
+      html+=`<div class="tile" id="${id}" onclick="toggleTile('${id}','${type}')">
+
+        <span class="tile-chev">▾</span>
+
+        <div class="tile-icon">${g.icon}</div>
+
+        <div class="tile-name">${g.name}</div>
+
+        <div class="tile-hint">${g.hint}</div>
+
+        <div class="tile-count" id="cnt-${id}">0</div>
+
+      </div>`;
+
+    });
+
+    html+=`</div>`;
+
+    tiles.forEach((g,i)=>{
+
+      const id=`tile-${type}-${i}`;
+
+      html+=`<div class="chip-tray" id="tray-${id}">`;
+
+      g.chips.forEach(c=>{
+
+        html+=`<span class="chip ${type}" data-factor="${c}" data-type="${type}" onclick="toggleChip(this,'${id}')">${c}</span>`;
+
+      });
+
+      html+=`</div>`;
+
+    });
+
+  };
+
+  if(isPos){
+
+    buildSection('pos',TILES.pos,'What\'s going well today?','#27500A');
+
+    html+=`<div style="margin-top:14px;"></div>`;
+
+    buildSection('neg',TILES.neg,'Any challenges too?','#791F1F');
+
+  } else if(isNeg){
+
+    buildSection('neg',TILES.neg,'What\'s been difficult today?','#791F1F');
+
+    html+=`<div style="margin-top:14px;"></div>`;
+
+    buildSection('pos',TILES.pos,'Any positives too?','#27500A');
+
+  } else {
+
+    buildSection('neg',TILES.neg,'Challenges today','#791F1F');
+
+    html+=`<div style="margin-top:14px;"></div>`;
+
+    buildSection('pos',TILES.pos,'Positives today','#27500A');
+
+  }
+
+  document.getElementById('factor-area').innerHTML=html;
+
+}
+
+function toggleTile(id,type){
+
+  const tile=document.getElementById(id);
+
+  const tray=document.getElementById('tray-'+id);
+
+  const isOpen=tile.classList.contains('open');
+
+  tile.classList.toggle('open',!isOpen);
+
+  if(!isOpen) tile.classList.add(type); else tile.classList.remove(type);
+
+  tray.classList.toggle('open',!isOpen);
+
+}
+
+function toggleChip(el,tileId){
+
+  el.classList.toggle('sel');
+
+  const cnt=document.querySelectorAll(`#tray-${tileId} .chip.sel`).length;
+
+  const countEl=document.getElementById('cnt-'+tileId);
+
+  if(cnt>0){countEl.textContent=cnt;countEl.classList.add('show');}
+
+  else{countEl.classList.remove('show');}
+
+}
+
+function submitCheckin(){
+
+  state.factors=[...document.querySelectorAll('.chip.sel')].map(c=>({label:c.dataset.factor,type:c.dataset.type}));
+
+  state.freetext=document.getElementById('freetext').value.trim();
+
+  state.wantsContact=document.getElementById('want-contact').checked;
+
+  state.contactInfo=state.wantsContact?document.getElementById('contact-info').value.trim():'';
+
+  const rec={id:Date.now(),ts:new Date().toISOString(),deviceId:DEVICE_ID,empId:state.empId,name:state.name,dept:state.dept,city:state.city,project:state.project,mood:state.mood,moodLabel:state.moodLabel,factors:state.factors,freetext:state.freetext,wantsContact:state.wantsContact,contactInfo:state.contactInfo};
+
+  records.unshift(rec); saveRec(); postCheckinToCloud(rec); state.allowAnother=false;
+
+  document.getElementById('thanks-emoji').textContent=state.mood>=4?'🎉':'✅';
+
+  document.getElementById('thanks-msg').textContent=state.mood<=2?'Your response is noted — thank you for being honest.':'Thank you — your voice shapes a better workplace.';
+
+  const notice=document.getElementById('alert-notice');
+
+  if(state.wantsContact){notice.style.display='block';notice.innerHTML='<strong>📞 HR will reach out</strong> — You asked to be contacted directly, so this check-in includes your contact details for HR only.';}
+
+  else if(state.mood<=2){notice.style.display='block';notice.innerHTML='<strong>Flagged for HR review</strong> — This pattern is visible to HR. If you\'d like personal follow-up, you can check "reach out to me" next time.';}
+
+  else notice.style.display='none';
+
+  showScreen('screen-thanks');
+
+}
+
+// ═══════════════════════════════════════
+
+// ACTION TRACKER
+
+// ═══════════════════════════════════════
+
+function addAction(){
+
+  const title=document.getElementById('act-title').value.trim();
+
+  if(!title){alert('Please enter an action title.');return;}
+
+  const a={
+
+    id:Date.now(),ts:new Date().toISOString(),
+
+    title,trigger:document.getElementById('act-trigger').value.trim(),
+
+    owner:document.getElementById('act-owner').value.trim(),
+
+    due:document.getElementById('act-due').value,
+
+    priority:document.getElementById('act-priority').value,
+
+    type:document.getElementById('act-type').value,
+
+    notes:document.getElementById('act-notes').value.trim(),
+
+    status:'open',updates:[]
+
+  };
+
+  actions.unshift(a); saveAct();
+
+  document.getElementById('act-title').value='';
+
+  document.getElementById('act-trigger').value='';
+
+  document.getElementById('act-owner').value='';
+
+  document.getElementById('act-notes').value='';
+
+  document.getElementById('act-due').value='';
+
+  renderActions();
+
+  updateActionStat();
+
+}
+
+function setActionStatus(id,status){
+
+  const a=actions.find(x=>x.id===id);
+
+  if(a){a.status=status;a.updates.push({ts:new Date().toISOString(),status});saveAct();renderActions();updateActionStat();}
+
+}
+
+function updateActionStat(){
+
+  const open=actions.filter(a=>a.status!=='resolved').length;
+
+  document.getElementById('s-actions').textContent=open;
+
+  const tabEl=document.querySelector('.tab[onclick*="t-actions"]');
+
+  if(tabEl) tabEl.textContent=open>0?`Actions 🔴`:`Actions`;
+
+}
+
+function renderActions(){
+
+  const filter=document.getElementById('act-filter')?.value||'';
+
+  const filtered=filter?actions.filter(a=>a.status===filter):actions;
+
+  const el=document.getElementById('action-list');
+
+  if(!el) return;
+
+  if(!filtered.length){el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:16px 0;">No actions logged yet. Use the form above to start tracking.</p>';return;}
+
+  el.innerHTML=filtered.map(a=>`
+
+    <div class="action-item ${a.status==='resolved'?'resolved':''}">
+
+      <div class="action-dot ${a.status}"></div>
+
+      <div style="flex:1;">
+
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
+
+          <span style="font-size:14px;font-weight:600;color:var(--text);">${a.title}</span>
+
+          <span class="priority-badge p-${a.priority}">${a.priority}</span>
+
+          <span class="badge b-teal">${ACT_TYPES[a.type]||a.type}</span>
+
+        </div>
+
+        ${a.trigger?`<p style="font-size:12px;color:var(--text3);margin-bottom:3px;">Trigger: ${a.trigger}</p>`:''}
+
+        ${a.owner?`<p style="font-size:12px;color:var(--text3);margin-bottom:3px;">Owner: ${a.owner}${a.due?' · Due: '+new Date(a.due).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</p>`:''}
+
+        ${a.notes?`<p style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5;">${a.notes}</p>`:''}
+
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+
+          ${a.status==='open'?`<button class="btn btn-sm" style="font-size:11px;padding:4px 10px;" onclick="setActionStatus(${a.id},'inprogress')">▶ In progress</button>`:''}
+
+          ${a.status!=='resolved'?`<button class="btn btn-success btn-sm" style="font-size:11px;padding:4px 10px;" onclick="setActionStatus(${a.id},'resolved')">✓ Resolved</button>`:''}
+
+          ${a.status==='resolved'?`<span style="font-size:11px;color:var(--green);font-weight:500;">✓ Resolved ${fmtDT(a.updates[a.updates.length-1]?.ts)}</span>`:''}
+
+        </div>
+
+      </div>
+
+    </div>`).join('');
+
+}
+
+// ═══════════════════════════════════════
+
+// DASHBOARD RENDER
+
+// ═══════════════════════════════════════
+
+function setPeriod(p,el){activePeriod=p;document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderDash();}
+
+function renderDash(){
+
+  const base=filterP(records,activePeriod);
+
+  const todayR=records.filter(r=>new Date(r.ts).toDateString()===todayStr());
+
+  const alerts=base.filter(r=>r.mood<=2);
+
+  const avg=base.length?(base.reduce((a,r)=>a+r.mood,0)/base.length).toFixed(1):'—';
+
+  const {start,end}=getPeriod(activePeriod);
+
+  document.getElementById('s-total').textContent=base.length;
+
+  document.getElementById('s-avg').textContent=avg;
+
+  document.getElementById('s-today').textContent=todayR.length;
+
+  document.getElementById('s-alert').textContent=alerts.length;
+
+  updateActionStat();
+
+  document.getElementById('dash-sub').textContent=(activePeriod==='all'?`All ${records.length} check-ins`:`${fmtD(start)} – ${fmtD(new Date(end-86400000))}`)+(syncStatus?` · ${syncStatus}`:'');
+
+  // Alert banner
+
+  const banner=document.getElementById('burnout-banner');
+
+  if(alerts.length){
+
+    banner.style.display='block';
+
+    document.getElementById('burnout-list').innerHTML=alerts.slice(0,6).map(r=>`
+
+      <div class="alert-row">
+
+        <div><p style="font-size:13px;font-weight:600;color:var(--red);">${r.wantsContact?'📞 Contact requested':'Anonymous'} · ${r.dept} · ${r.city}${r.project&&r.project!=='General'?' · '+r.project:''}</p>
+
+        <p style="font-size:12px;color:var(--red);margin-top:2px;">${MOODS[r.mood].emoji} ${r.moodLabel} · ${fmtDT(r.ts)}</p>
+
+        ${r.factors.length?`<p style="font-size:11px;color:var(--red);margin-top:2px;">${r.factors.slice(0,3).map(f=>f.label).join(' · ')}</p>`:''}
+
+        ${r.wantsContact&&r.contactInfo?`<p style="font-size:11px;color:var(--red);margin-top:2px;font-weight:600;">Contact: ${r.contactInfo}</p>`:''}</div>
+
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+
+          <span class="badge b-neg">Follow up</span>
+
+          <button class="btn btn-sm" style="font-size:11px;padding:4px 10px;" onclick="quickAction('${r.deviceId}','${r.dept}')">+ Log action</button>
+
+        </div>
+
+      </div>`).join('');
+
+  } else banner.style.display='none';
+
+  renderMoodDist(base);
+
+  renderTrendChart(base);
+
+  renderTopDrivers(base);
+
+  renderHeatmap();
+
+  renderPeriodCompare();
+
+  renderActionSummary(base);
+
+  renderFactorCharts(base);
+
+  renderFactorPersist(base);
+
+  renderSegments(base);
+
+  renderLog(base);
+
+  renderActions();
+
+  populateLogFilters(records);
+
+}
+
+function quickAction(deviceId,dept){
+
+  switchTab('t-actions');
+
+  document.getElementById('act-trigger').value=`${dept} — anon ref ${deviceId.slice(-6)}`;
+
+  document.getElementById('act-type').value='1on1';
+
+  document.getElementById('act-priority').value='high';
+
+  document.getElementById('act-title').focus();
+
+}
+
+function renderMoodDist(recs){
+
+  const cnt={1:0,2:0,3:0,4:0,5:0};
+
+  recs.forEach(r=>cnt[r.mood]++);
+
+  const tot=recs.length||1;
+
+  document.getElementById('mood-dist').innerHTML=[5,4,3,2,1].map(m=>{
+
+    const p=Math.round(cnt[m]/tot*100);
+
+    return `<div class="pbar-wrap"><span style="font-size:17px;width:24px;">${MOODS[m].emoji}</span><span class="pbar-label w70">${MOODS[m].label}</span><div class="pbar-track"><div class="pbar-fill" style="width:${p}%;background:${MOODS[m].color};"></div></div><span class="pbar-count">${cnt[m]} (${p}%)</span></div>`;
+
+  }).join('');
+
+}
+
+function renderTrendChart(recs){
+
+  const canvas=document.getElementById('trend-chart');
+
+  if(!canvas) return;
+
+  const ctx=canvas.getContext('2d');
+
+  const W=canvas.offsetWidth||650, H=130;
+
+  canvas.width=W; canvas.height=H;
+
+  const days=[];
+
+  for(let i=14;i>=0;i--){
+
+    const d=new Date(); d.setDate(d.getDate()-i);
+
+    const dr=recs.filter(r=>new Date(r.ts).toDateString()===d.toDateString());
+
+    days.push({date:d,avg:dr.length?dr.reduce((a,r)=>a+r.mood,0)/dr.length:null,count:dr.length});
+
+  }
+
+  ctx.clearRect(0,0,W,H);
+
+  const pad={l:28,r:16,t:12,b:22};
+
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+
+  ctx.strokeStyle='#e2ddd6'; ctx.lineWidth=0.5;
+
+  [1,2,3,4,5].forEach(v=>{
+
+    const y=pad.t+ch-(v-1)/4*ch;
+
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+
+    ctx.fillStyle='#9e9a94';ctx.font='10px DM Sans,sans-serif';ctx.textAlign='right';
+
+    ctx.fillText(v,pad.l-4,y+3);
+
+  });
+
+  const step=Math.floor(cw/(days.length-1));
+
+  days.forEach((d,i)=>{
+
+    if(i%4===0||i===14){
+
+      ctx.fillStyle='#9e9a94';ctx.font='10px DM Sans,sans-serif';ctx.textAlign='center';
+
+      ctx.fillText(d.date.toLocaleDateString('en-IN',{day:'numeric',month:'short'}),pad.l+i*step,H-4);
+
+    }
+
+  });
+
+  const valid=days.filter(d=>d.avg!==null);
+
+  if(valid.length<2){ctx.fillStyle='#9e9a94';ctx.font='13px DM Sans,sans-serif';ctx.textAlign='center';ctx.fillText('Not enough data yet',W/2,H/2);return;}
+
+  ctx.beginPath();ctx.strokeStyle='#888';ctx.lineWidth=1.5;
+
+  let first=true;
+
+  days.forEach((d,i)=>{
+
+    if(d.avg===null) return;
+
+    const x=pad.l+i*step,y=pad.t+ch-(d.avg-1)/4*ch;
+
+    first?(ctx.moveTo(x,y),first=false):ctx.lineTo(x,y);
+
+  });
+
+  ctx.stroke();
+
+  days.forEach((d,i)=>{
+
+    if(d.avg===null) return;
+
+    const x=pad.l+i*step,y=pad.t+ch-(d.avg-1)/4*ch;
+
+    ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+
+    ctx.fillStyle=MC[Math.round(d.avg)]||'#888';ctx.fill();
+
+  });
+
+}
+
+function renderTopDrivers(recs){
+
+  const pos={},neg={};
+
+  recs.forEach(r=>r.factors.forEach(f=>{
+
+    if(f.type==='pos') pos[f.label]=(pos[f.label]||0)+1;
+
+    else neg[f.label]=(neg[f.label]||0)+1;
+
+  }));
+
+  const tp=Object.entries(pos).sort((a,b)=>b[1]-a[1])[0];
+
+  const tn=Object.entries(neg).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('top-pos').textContent=tp?`${tp[0]} (${tp[1]}×)`:'No data yet';
+
+  document.getElementById('top-neg').textContent=tn?`${tn[0]} (${tn[1]}×)`:'No data yet';
+
+}
+
+function renderHeatmap(){
+
+  const hm=document.getElementById('heatmap');
+
+  const dl=document.getElementById('hm-dates');
+
+  const bgC=['#f0ede8','#fdecea','#fff3e0','#F1EFE8','#E1F5EE','#e6f5ee'];
+
+  const brC=['#e2ddd6','#f5b5b0','#f5d78e','#c5c3bc','#a8dfc4','#a8dfc4'];
+
+  const cells=[],labels=[];
+
+  for(let i=14;i>=0;i--){
+
+    const d=new Date();d.setDate(d.getDate()-i);
+
+    const ds=d.toDateString();
+
+    const dr=records.filter(r=>new Date(r.ts).toDateString()===ds);
+
+    const avg=dr.length?Math.round(dr.reduce((a,r)=>a+r.mood,0)/dr.length):0;
+
+    cells.push(`<div title="${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}: ${avg?MOODS[avg].label+' ('+dr.length+')':'No data'}" style="aspect-ratio:1;border-radius:3px;background:${bgC[avg]};border:1px solid ${brC[avg]};cursor:default;"></div>`);
+
+    if(i===14||i===7||i===0) labels.push(`<span>${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>`);
+
+    else labels.push('<span></span>');
+
+  }
+
+  hm.innerHTML=cells.join('');
+
+  dl.innerHTML=labels.join('');
+
+}
+
+function renderPeriodCompare(){
+
+  const cur=filterP(records,'current'), prev=filterP(records,'prev');
+
+  const ac=cur.length?(cur.reduce((a,r)=>a+r.mood,0)/cur.length).toFixed(1):null;
+
+  const ap=prev.length?(prev.reduce((a,r)=>a+r.mood,0)/prev.length).toFixed(1):null;
+
+  const diff=ac&&ap?(ac-ap).toFixed(1):null;
+
+  document.getElementById('period-compare').innerHTML=`
+
+    <div class="two-col" style="margin-bottom:12px;">
+
+      <div class="stat-card"><div class="stat-val">${ac||'—'}</div><div class="stat-lbl">Current period avg</div></div>
+
+      <div class="stat-card"><div class="stat-val">${ap||'—'}</div><div class="stat-lbl">Previous period avg</div></div>
+
+    </div>
+
+    ${diff!==null?`<p style="font-size:14px;font-weight:500;color:${+diff>=0?'var(--green)':'var(--red)'};">${+diff>=0?'▲ Improved':'▼ Declined'} by ${Math.abs(diff)} points period-over-period</p>`:'<p style="font-size:13px;color:var(--text3);">Need data in both periods for comparison.</p>'}`;
+
+}
+
+function renderActionSummary(recs){
+
+  const el=document.getElementById('action-summary');
+
+  if(!recs.length){el.innerHTML='<p style="font-size:13px;color:var(--text3);">No data for this period yet.</p>';return;}
+
+  const nc={};
+
+  recs.forEach(r=>r.factors.filter(f=>f.type==='neg').forEach(f=>{nc[f.label]=(nc[f.label]||0)+1;}));
+
+  const top=Object.entries(nc).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  const avg=(recs.reduce((a,r)=>a+r.mood,0)/recs.length).toFixed(1);
+
+  const alerts=recs.filter(r=>r.mood<=2).length;
+
+  const status=avg>=4?'Positive':avg>=3?'Watchful':'Needs attention';
+
+  const sc=avg>=4?'var(--green)':avg>=3?'var(--amber)':'var(--red)';
+
+  el.innerHTML=`<p style="font-size:14px;margin-bottom:10px;">Period health: <span style="color:${sc};font-weight:600;">${status}</span> (avg ${avg}/5) · ${alerts} flagged</p>
+
+    ${top.length?`<p style="font-size:13px;color:var(--text2);margin-bottom:7px;font-weight:500;">Top issues to address this period:</p>`:''}
+
+    ${top.map(([f,c])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--red-l);border-radius:var(--rsm);margin-bottom:5px;"><span style="font-size:13px;color:var(--red);">${f}</span><span class="badge b-neg">${c}×</span></div>`).join('')}`;
+
+}
+
+function renderFactorCharts(recs){
+
+  const pos={},neg={};
+
+  recs.forEach(r=>r.factors.forEach(f=>{
+
+    if(f.type==='pos') pos[f.label]=(pos[f.label]||0)+1;
+
+    else neg[f.label]=(neg[f.label]||0)+1;
+
+  }));
+
+  const sp=Object.entries(pos).sort((a,b)=>b[1]-a[1]).slice(0,7);
+
+  const sn=Object.entries(neg).sort((a,b)=>b[1]-a[1]).slice(0,7);
+
+  const mp=sp[0]?.[1]||1, mn=sn[0]?.[1]||1;
+
+  document.getElementById('factor-pos').innerHTML=sp.length?sp.map(([f,c])=>`<div class="pbar-wrap"><span class="pbar-label w180">${f}</span><div class="pbar-track"><div class="pbar-fill" style="width:${Math.round(c/mp*100)}%;background:var(--green);"></div></div><span class="pbar-count"><span class="badge b-pos">${c}</span></span></div>`).join(''):'<p style="font-size:13px;color:var(--text3);">No positive factors yet.</p>';
+
+  document.getElementById('factor-neg').innerHTML=sn.length?sn.map(([f,c])=>`<div class="pbar-wrap"><span class="pbar-label w180">${f}</span><div class="pbar-track"><div class="pbar-fill" style="width:${Math.round(c/mn*100)}%;background:var(--red);"></div></div><span class="pbar-count"><span class="badge b-neg">${c}</span></span></div>`).join(''):'<p style="font-size:13px;color:var(--text3);">No negative factors yet.</p>';
+
+}
+
+function renderFactorPersist(recs){
+
+  const ef={};
+
+  recs.forEach(r=>{
+
+    if(!r.deviceId) return;
+
+    const k=r.deviceId;
+
+    if(!ef[k]) ef[k]={dept:r.dept,f:{}};
+
+    r.factors.filter(f=>f.type==='neg').forEach(f=>{ef[k].f[f.label]=(ef[k].f[f.label]||0)+1;});
+
+  });
+
+  const persistent=Object.values(ef).flatMap(e=>Object.entries(e.f).filter(([,c])=>c>=2).map(([f,c])=>({dept:e.dept,factor:f,count:c}))).sort((a,b)=>b.count-a.count).slice(0,8);
+
+  document.getElementById('factor-persist').innerHTML=persistent.length?persistent.map(p=>`
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:6px;">
+
+      <div><p style="font-size:13px;font-weight:500;">Anonymous · ${p.dept}</p><p style="font-size:12px;color:var(--red);">${p.factor}</p></div>
+
+      <span class="badge b-neg">${p.count}× repeated</span>
+
+    </div>`).join(''):'<p style="font-size:13px;color:var(--text3);">No persistent patterns — good sign!</p>';
+
+}
+
+function renderSegments(recs){
+
+  const render=(elId,key)=>{
+
+    const g={};
+
+    recs.forEach(r=>{const v=r[key]||'Unspecified';if(!g[v])g[v]=[];g[v].push(r.mood);});
+
+    const sorted=Object.entries(g).sort((a,b)=>b[1].length-a[1].length);
+
+    document.getElementById(elId).innerHTML=sorted.length?sorted.map(([grp,moods])=>{
+
+      const a=moods.reduce((x,y)=>x+y,0)/moods.length;
+
+      const c=a>=4?'var(--green)':a>=3?'#aaa89f':a>=2?'var(--amber)':'var(--red)';
+
+      const ac=moods.filter(m=>m<=2).length;
+
+      return `<div class="pbar-wrap"><span class="pbar-label w150">${grp}</span><div class="pbar-track"><div class="pbar-fill" style="width:${Math.round(a/5*100)}%;background:${c};"></div></div><span class="pbar-count" style="display:flex;align-items:center;gap:4px;width:80px;justify-content:flex-end;"><span style="font-size:12px;">${a.toFixed(1)}</span>${ac?`<span class="badge b-neg" style="font-size:10px;">${ac}⚠</span>`:''}</span></div>`;
+
+    }).join(''):'<p style="font-size:13px;color:var(--text3);">No data yet.</p>';
+
+  };
+
+  render('seg-dept','dept');
+
+  render('seg-city','city');
+
+  render('seg-project','project');
+
+}
+
+function populateLogFilters(all){
+
+  const depts=[...new Set(all.map(r=>r.dept).filter(Boolean))];
+
+  const cities=[...new Set(all.map(r=>r.city).filter(Boolean))];
+
+  const projs=[...new Set(all.map(r=>r.project).filter(Boolean))];
+
+  const set=(id,vals,label)=>{
+
+    const el=document.getElementById(id); const cur=el.value;
+
+    el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
+
+  };
+
+  set('f-dept',depts,'All depts');
+
+  set('f-city',cities,'All cities');
+
+  set('f-proj',projs,'All projects');
+
+}
+
+function renderLog(recs){
+
+  const mf=document.getElementById('f-mood')?.value;
+
+  const df=document.getElementById('f-dept')?.value;
+
+  const cf=document.getElementById('f-city')?.value;
+
+  const pf=document.getElementById('f-proj')?.value;
+
+  let fil=recs;
+
+  if(mf) fil=fil.filter(r=>r.mood===parseInt(mf));
+
+  if(df) fil=fil.filter(r=>r.dept===df);
+
+  if(cf) fil=fil.filter(r=>r.city===cf);
+
+  if(pf) fil=fil.filter(r=>r.project===pf);
+
+  const el=document.getElementById('checkin-log');
+
+  el.innerHTML=fil.length?fil.slice(0,40).map(r=>`
+
+    <div class="log-entry ${r.mood<=2?'alert':r.mood>=4?'good':''}">
+
+      <div class="log-meta">
+
+        <div style="display:flex;align-items:center;gap:9px;">
+
+          <span style="font-size:22px;">${MOODS[r.mood].emoji}</span>
+
+          <div>
+
+            <p style="font-size:14px;font-weight:600;">${r.wantsContact?'📞 ':''}${r.name&&r.name!=='Prefer not to say'?r.name:'Prefer not to say'}</p>
+
+            <p style="font-size:12px;color:var(--text3);">${r.empId&&r.empId!=='Prefer not to say'?'ID: '+r.empId+' · ':''}${r.dept} · ${r.city}${r.project&&r.project!=='General'?' · '+r.project:''}</p>
+
+            <p style="font-size:11px;color:var(--text3);">${fmtDT(r.ts)}</p>
+
+          </div>
+
+        </div>
+
+        <span class="badge" style="background:${MOODS[r.mood].bg};color:${MOODS[r.mood].color};">${r.moodLabel}</span>
+
+      </div>
+
+      ${r.factors.length?`<div class="log-chips">${r.factors.map(f=>`<span class="log-chip" style="background:${f.type==='pos'?'var(--green-l)':'var(--red-l)'};color:${f.type==='pos'?'#27500A':'#791F1F'};">${f.label}</span>`).join('')}</div>`:''}
+
+      ${r.freetext?`<p style="font-size:13px;color:var(--text2);margin-top:7px;font-style:italic;line-height:1.5;">"${r.freetext}"</p>`:''}
+
+    </div>`).join(''):'<p style="font-size:13px;color:var(--text3);padding:16px 0;">No records match your filters.</p>';
+
+}
+
+// ═══════════════════════════════════════
+
+// EXPORT & UTILS
+
+// ═══════════════════════════════════════
+
+function exportCSV(){
+
+  if(!records.length){alert('No check-ins to export yet.');return;}
+
+  const hdr=['ID','Timestamp','Employee ID','Name','Department','City','Project','Mood Score','Mood Label','Positive Factors','Negative Factors','Notes','Contact Requested','Contact Info'];
+
+  const rows=records.map(r=>{
+
+    const pos=r.factors.filter(f=>f.type==='pos').map(f=>f.label).join('; ');
+
+    const neg=r.factors.filter(f=>f.type==='neg').map(f=>f.label).join('; ');
+
+    return [r.id,r.ts,`"${r.empId||'Prefer not to say'}"`,`"${r.name||'Prefer not to say'}"`,`"${r.dept}"`,`"${r.city||''}"`,`"${r.project||''}"`,r.mood,r.moodLabel,`"${pos}"`,`"${neg}"`,`"${(r.freetext||'').replace(/"/g,"'")}"`,r.wantsContact?'Yes':'No',`"${r.wantsContact?(r.contactInfo||''):''}"`].join(',');
+
+  });
+
+  const csv=[hdr.join(','),...rows].join('\n');
+
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+
+  a.download=`moodometer_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+
+}
+
+function clearData(){if(!confirm('Delete ALL check-in records? This cannot be undone.'))return;records=[];saveRec();renderDash();}
+
+function switchTab(id){
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+
+  document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+
+  document.getElementById(id).classList.add('active');
+
+  const order=['t-overview','t-trend','t-factors','t-segments','t-log','t-actions','t-ai'];
+
+  document.querySelectorAll('.tab')[order.indexOf(id)]?.classList.add('active');
+
+  if(id==='t-overview') setTimeout(()=>renderTrendChart(filterP(records,activePeriod)),50);
+
+}
+
+// ═══════════════════════════════════════
+
+// QR + DEPLOY
+
+// ═══════════════════════════════════════
+
+function renderQR(retries=20){
+
+  const url=window.location.href.split('?')[0]+'?via=qr';
+
+  document.getElementById('qr-url').textContent=url;
+
+  const canvas=document.getElementById('qr-canvas');
+
+  if(!canvas) return;
+
+  const ctx=canvas.getContext('2d');
+
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,190,190);
+
+  ctx.font='12px DM Sans,sans-serif';ctx.fillStyle='#534AB7';ctx.textAlign='center';
+
+  if(window.location.protocol==='file:'){
+
+    ctx.fillText('Host this file online first',95,82);
+
+    ctx.fillText('(see steps below), then open',95,100);
+
+    ctx.fillText('that link to get a scannable QR.',95,118);
+
+    return;
+
+  }
+
+  if(typeof qrcode==='undefined'){
+
+    if(retries>0){ setTimeout(()=>renderQR(retries-1),200); return; }
+
+    ctx.fillText('Could not load the QR library —',95,90);
+
+    ctx.fillText('check your internet connection.',95,108);
+
+    return;
+
+  }
+
+  try{
+
+    const qr=qrcode(0,'M');qr.addData(url);qr.make();
+
+    const sz=qr.getModuleCount(),cell=Math.floor(170/sz),off=Math.floor((190-sz*cell)/2);
+
+    ctx.fillStyle='#1a1916';
+
+    for(let r=0;r<sz;r++) for(let c=0;c<sz;c++) if(qr.isDark(r,c)) ctx.fillRect(off+c*cell,off+r*cell,cell,cell);
+
+  }catch(e){
+
+    ctx.fillText('Could not generate QR code.',95,95);
+
+  }
+
+}
+
+function dlQR(){const a=document.createElement('a');a.href=document.getElementById('qr-canvas').toDataURL('image/png');a.download='moodometer-qr.png';a.click();}
+
+function copyUrl(){const url=window.location.href.split('?')[0]+'?via=qr';navigator.clipboard.writeText(url).then(()=>alert('Link copied!')).catch(()=>prompt('Copy this link:',url));}
+
+// ═══════════════════════════════════════
+// NOTIFICATIONS
+// Browser-level local reminder — fires once per day if the tab/PWA
+// is open around the scheduled time, using the Notifications API.
+// This is a starting point: true background push (works even when
+// the app is fully closed) needs a service worker + Firebase Cloud
+// Messaging, which is a later stage of this build.
+// ═══════════════════════════════════════
+const REMINDER_HOUR=9; // 9 AM local time
+
+function notifStatusText(){
+  if(!('Notification' in window)) return 'Notifications aren\'t supported in this browser.';
+  if(Notification.permission==='granted') return '✅ Reminders are on for this device.';
+  if(Notification.permission==='denied') return '🚫 Notifications blocked — enable them in browser site settings to turn this back on.';
+  return '';
+}
+
+function enableNotifications(){
+  if(!('Notification' in window)){
+    document.getElementById('notif-status').textContent='Notifications aren\'t supported in this browser.';
+    return;
+  }
+  Notification.requestPermission().then(perm=>{
+    document.getElementById('notif-status').textContent=notifStatusText();
+    if(perm==='granted'){
+      try{localStorage.setItem('mood_notif_enabled','1');}catch(e){}
+      new Notification('Moodometer reminders are on',{body:'You\'ll get a daily nudge to check in. Takes 30 seconds.'});
+      scheduleDailyReminder();
+    }
+  });
+}
+
+function scheduleDailyReminder(){
+  // Lightweight in-tab scheduler: checks once a minute while the app
+  // is open and fires a reminder once per day after REMINDER_HOUR,
+  // if today's check-in hasn't happened yet on this device.
+  function tick(){
+    if(Notification.permission!=='granted') return;
+    const now=new Date();
+    const lastFired=localStorage.getItem('mood_notif_last')||'';
+    if(now.getHours()>=REMINDER_HOUR && lastFired!==todayStr() && !alreadyIn()){
+      new Notification('Moodometer — daily check-in',{body:'Take 30 seconds to share how today\'s going. Fully anonymous.'});
+      try{localStorage.setItem('mood_notif_last',todayStr());}catch(e){}
+    }
+  }
+  tick();
+  setInterval(tick,60000);
+}
+
+// ═══════════════════════════════════════
+
+// AI ACTION PLAN
+
+// ═══════════════════════════════════════
+
+async function runAI(){
+
+  const recs=filterP(records,activePeriod);
+
+  const el=document.getElementById('ai-output');
+
+  if(!recs.length){el.textContent='No check-in data for this period yet.';return;}
+
+  const btn=document.getElementById('ai-btn');
+
+  btn.disabled=true;btn.textContent='Analysing…';
+
+  const {start,end}=getPeriod(activePeriod);
+
+  const summary=recs.slice(0,50).map(r=>{
+
+    const pos=r.factors.filter(f=>f.type==='pos').map(f=>f.label).join(', ')||'none';
+
+    const neg=r.factors.filter(f=>f.type==='neg').map(f=>f.label).join(', ')||'none';
+
+    return `${r.dept}|${r.city}|${r.project}|${r.moodLabel}(${r.mood})|+[${pos}]|-[${neg}]|${r.freetext||'—'}`;
+
+  }).join('\n');
+
+  const neg={};recs.forEach(r=>r.factors.filter(f=>f.type==='neg').forEach(f=>{neg[f.label]=(neg[f.label]||0)+1;}));
+
+  const topNeg=Object.entries(neg).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([l,c])=>`${l}(${c}×)`).join(', ');
+
+  const avg=(recs.reduce((a,r)=>a+r.mood,0)/recs.length).toFixed(1);
+
+  const alertCount=recs.filter(r=>r.mood<=2).length;
+
+  const openActions=actions.filter(a=>a.status!=='resolved').length;
+
+  try{
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
+
+        system:'You are a senior HR business partner and OD specialist in India. Analyse 15-day employee mood data and generate a practical, empathetic HR action plan. Write in clear paragraphs. No bullet symbols or markdown headers. Weight persistent patterns across multiple days and employees over single-day entries. Focus on systemic issues. Be specific about who should do what.',
+
+        messages:[{role:'user',content:`Period: ${fmtD(start)} to ${fmtD(new Date(end-86400000))}
+
+Check-ins: ${recs.length} | Avg mood: ${avg}/5 | Flagged: ${alertCount} | Open HR actions: ${openActions}
+
+Top negatives: ${topNeg}
+
+Data:\n${summary}
+
+Provide: (1) 2-sentence workforce sentiment assessment. (2) Top 3 systemic issues with evidence. (3) Any red flags needing immediate HR intervention. (4) 5 concrete HR actions for the next 15 days — name the process type, owner, and expected outcome for each. (5) One metric to track next period.`}]})});
+
+    const data=await res.json();
+
+    el.textContent=data.content?.find(c=>c.type==='text')?.text||'Could not generate insight.';
+
+  }catch(e){el.textContent='Unable to reach AI service. Please check your connection and try again.';}
+
+  btn.disabled=false;btn.textContent='✦ Regenerate action plan ↗';
+
+}
+
+// ═══════════════════════════════════════
+
+// INIT
+
+// ═══════════════════════════════════════
+
+(function init(){
+
+  if(KIOSK_MODE){ const navBtn=document.getElementById('nav-hr-dash'); if(navBtn) navBtn.style.display='none'; }
+
+  const h=new Date().getHours();
+
+  document.getElementById('greet').textContent=h<12?'morning':h<17?'afternoon':'evening';
+
+  document.getElementById('checkin-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  const s=document.createElement('script');
+
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+
+  document.head.appendChild(s);
+
+  const origShowScreen=window.showScreen;
+
+  window.showScreen=function(id){
+
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+
+    document.getElementById(id).classList.add('active');
+
+    if(id==='screen-deploy'){ setTimeout(renderQR,250); document.getElementById('notif-status').textContent=notifStatusText(); }
+
+  };
+
+  if('Notification' in window && Notification.permission==='granted'){
+
+    try{ if(localStorage.getItem('mood_notif_enabled')==='1') scheduleDailyReminder(); }catch(e){}
+
+  }
+
+  syncFromCloud().then(()=>{ if(document.getElementById('screen-dashboard').classList.contains('active')) renderDash(); });
+
+  setInterval(()=>{ syncFromCloud().then(()=>{ if(document.getElementById('screen-dashboard').classList.contains('active')) renderDash(); }); },60000);
+
+})();
+
+</script>
+
+</body>
+
+</html>
