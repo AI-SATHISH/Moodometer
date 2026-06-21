@@ -70,6 +70,16 @@ textarea{resize:none;}
 
 select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%236b6760' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
 
+.dept-dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--surface);border:1px solid var(--border2);border-radius:var(--rsm);margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.1);}
+
+.dept-dropdown.open{display:block;}
+
+.dept-opt{padding:9px 12px;font-size:13.5px;cursor:pointer;color:var(--text);}
+
+.dept-opt:hover,.dept-opt.hl{background:var(--purple-l);color:var(--purple);}
+
+.dept-opt-empty{padding:9px 12px;font-size:13px;color:var(--text3);}
+
 .btn{cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:var(--rsm);padding:9px 16px;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
 
 .btn:hover{background:var(--surface2);}
@@ -129,15 +139,21 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
 .tile-section-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
 
-.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px;margin-bottom:4px;}
+.tile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:4px;}
 
-.tile{cursor:pointer;border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;transition:all .15s;position:relative;}
+.tile{cursor:pointer;border:1px solid var(--border);border-radius:var(--r);padding:11px 10px;transition:all .15s;position:relative;}
 
 .tile:hover{border-color:var(--purple-m);background:var(--surface2);}
 
 .tile.open.pos{border-color:var(--green);background:var(--green-l);}
 
 .tile.open.neg{border-color:var(--red);background:var(--red-l);}
+
+.none-tile{text-align:center;}
+
+.none-tile.selected{border-color:var(--purple);background:var(--purple-l);box-shadow:0 0 0 3px rgba(83,74,183,.1);}
+
+.none-tile.selected .tile-name{color:var(--purple);}
 
 .tile-icon{font-size:20px;margin-bottom:5px;}
 
@@ -355,15 +371,19 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
       <div class="two-col">
 
-        <div class="field"><label>Department *</label>
+        <div class="field" style="position:relative;"><label>Department *</label>
 
-          <select id="emp-dept" required><option value="">Select department</option><option>HR</option><option>Operations</option><option>Finance</option><option>Sales & Marketing</option><option>IT</option><option>Production</option><option>Admin</option><option>Logistics</option><option>Customer Service</option><option>Quality</option><option>R&D</option><option>Legal</option></select>
+          <input id="emp-dept-search" type="text" autocomplete="off" placeholder="Search department…" oninput="filterDeptOptions(this.value)" onfocus="openDeptDropdown()" />
+
+          <input type="hidden" id="emp-dept" required/>
+
+          <div id="dept-dropdown" class="dept-dropdown"></div>
 
         </div>
 
         <div class="field"><label>City / Location *</label>
 
-          <select id="emp-city" required><option value="">Select city</option><option>Chennai</option><option>Coimbatore</option><option>Madurai</option><option>Trichy</option><option>Salem</option><option>Tirunelveli</option><option>Vellore</option><option>Erode</option><option>Bengaluru</option><option>Mumbai</option><option>Delhi</option><option>Hyderabad</option><option>Pune</option><option>Kolkata</option><option>Other</option></select>
+          <select id="emp-city" required><option value="">Select location</option></select>
 
         </div>
 
@@ -387,7 +407,13 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
   <div class="card">
 
-    <div class="clabel">Step 2 of 3 — How are you feeling today?</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;">
+
+      <button class="btn btn-sm" onclick="showScreen('screen-checkin')" style="padding:6px 10px;" aria-label="Back">←</button>
+
+      <div class="clabel" style="margin-bottom:0;">Step 2 of 3 — How are you feeling today?</div>
+
+    </div>
 
     <p style="font-size:13px;color:var(--text3);margin-bottom:14px;">Be honest — your response is confidential and helps HR take the right actions.</p>
 
@@ -417,7 +443,13 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
   <div class="card">
 
-    <div class="clabel">Step 3 of 3 — What's influencing your mood?</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;">
+
+      <button class="btn btn-sm" onclick="showScreen('screen-mood')" style="padding:6px 10px;" aria-label="Back">←</button>
+
+      <div class="clabel" style="margin-bottom:0;">Step 3 of 3 — What's influencing your mood?</div>
+
+    </div>
 
     <p style="font-size:13px;color:var(--text3);margin-bottom:14px;">Tap a tile to expand, then select any chips that apply. Pick as many as feel right.</p>
 
@@ -839,6 +871,10 @@ const TILES={
 
 };
 
+const DEPARTMENTS=["Accounts", "Accounts, Audit & Taxation", "Admin", "Administration", "Architect", "Associate Channel Partner Sales", "Audit", "Business Development", "Business Development & Exploration", "Business Development & Operations", "Chairmans Office", "Company Secretary", "Contracts", "Corporate - Sales", "Corporate Strategy", "Costing & Budgeting", "CP Sales", "CRM", "Data Analytics", "Design, Budget, Innovation & Audit", "Digital Labs", "Documentation", "Documentation & Legal Support", "ED's Office", "ERP", "Facilities", "Finance", "Finance & Accounts", "Front Office & Admin", "Home Loan", "HR & Admin", "Human Resource", "Internal Audit", "Internal Audit & MIS", "International Sales", "Inventory Delivery Department", "Inventory, Project Designs & Operations", "IT", "Land Acquisition", "Landscaping", "Lead Audit", "Lead Management System", "Legal", "Legal, Land Acquisition and Registration", "Loyalty - Presales", "Loyalty - Sales", "Machine Learning", "Maintenance & House Keeping", "Management", "Marketing", "MEP", "MIS", "Movie Reels", "Operations", "Plant & Machinery", "Planning", "Presales", "Product & Marketing", "Project Audit & Process Controls", "Project Design", "Projects", "Promoter", "Purchase", "Purchase & Contracts", "QA/QC", "QS", "QS & Billing", "Registration", "Safety", "Sales", "Sales - Onboarding & Retention", "Sales Coordinator", "Sales, Marketing & CRM", "Security", "Software Development", "Stores", "Survey", "Sustainability", "Talent Acquisition", "Training", "Wellness"];
+
+const LOCATIONS=["Chennai","Bangalore","Hyderabad","GCC"];
+
 let state={dept:'',city:'',project:'',mood:null,moodLabel:'',factors:[],freetext:'',wantsContact:false,contactInfo:'',allowAnother:false};
 
 let records=[], actions=[], activePeriod='current';
@@ -917,6 +953,51 @@ async function syncFromCloud(){
 // ═══════════════════════════════════════
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+// ═══════════════════════════════════════
+// DEPARTMENT SEARCH COMBOBOX
+// ═══════════════════════════════════════
+function populateCityOptions(){
+  const sel=document.getElementById('emp-city');
+  if(!sel || sel.options.length>1) return; // already populated
+  LOCATIONS.forEach(loc=>{
+    const o=document.createElement('option');
+    o.textContent=loc;
+    sel.appendChild(o);
+  });
+}
+
+function renderDeptOptions(list){
+  const dd=document.getElementById('dept-dropdown');
+  if(!list.length){ dd.innerHTML='<div class="dept-opt-empty">No matching department</div>'; return; }
+  dd.innerHTML=list.map(d=>`<div class="dept-opt" onmousedown="selectDept('${d.replace(/'/g,"\\'")}')">${d}</div>`).join('');
+}
+
+function openDeptDropdown(){
+  renderDeptOptions(DEPARTMENTS);
+  document.getElementById('dept-dropdown').classList.add('open');
+}
+
+function filterDeptOptions(q){
+  document.getElementById('emp-dept').value=''; // typing invalidates a prior exact selection
+  const query=q.trim().toLowerCase();
+  const list=query?DEPARTMENTS.filter(d=>d.toLowerCase().includes(query)):DEPARTMENTS;
+  renderDeptOptions(list);
+  document.getElementById('dept-dropdown').classList.add('open');
+}
+
+function selectDept(name){
+  document.getElementById('emp-dept-search').value=name;
+  document.getElementById('emp-dept').value=name;
+  document.getElementById('dept-dropdown').classList.remove('open');
+}
+
+document.addEventListener('click',(e)=>{
+  const wrap=document.getElementById('emp-dept-search');
+  const dd=document.getElementById('dept-dropdown');
+  if(!wrap||!dd) return;
+  if(e.target!==wrap && !dd.contains(e.target)) dd.classList.remove('open');
+});
 
 const HR_DASHBOARD_PASSWORD='Urban@2026';
 let hrUnlocked=false; // stays unlocked only for this browser tab/session — resets on reload
@@ -1139,6 +1220,16 @@ function buildFactorArea(){
 
     });
 
+    html+=`<div class="tile none-tile" id="none-${type}" onclick="toggleNone('${type}')" style="grid-column:span 2;">
+
+        <div class="tile-icon">🚫</div>
+
+        <div class="tile-name">Prefer not to say</div>
+
+        <div class="tile-hint">no comment here</div>
+
+      </div>`;
+
     html+=`</div>`;
 
     tiles.forEach((g,i)=>{
@@ -1203,6 +1294,8 @@ function toggleTile(id,type){
 
   tray.classList.toggle('open',!isOpen);
 
+  if(!isOpen) clearNoneState(type);
+
 }
 
 function toggleChip(el,tileId){
@@ -1216,6 +1309,56 @@ function toggleChip(el,tileId){
   if(cnt>0){countEl.textContent=cnt;countEl.classList.add('show');}
 
   else{countEl.classList.remove('show');}
+
+  if(el.classList.contains('sel')) clearNoneState(el.dataset.type);
+
+}
+
+function clearNoneState(type){
+
+  const btn=document.getElementById('none-'+type);
+
+  if(btn && btn.classList.contains('selected')){
+
+    btn.classList.remove('selected');
+
+  }
+
+}
+
+function toggleNone(type){
+
+  const btn=document.getElementById('none-'+type);
+
+  const willActivate=!btn.classList.contains('selected');
+
+  btn.classList.toggle('selected',willActivate);
+
+  if(willActivate){
+
+    document.querySelectorAll(`.tile.open[id^="tile-${type}-"]`).forEach(t=>{
+
+      const id=t.id;
+
+      t.classList.remove('open',type);
+
+      const tray=document.getElementById('tray-'+id);
+
+      if(tray){
+
+        tray.classList.remove('open');
+
+        tray.querySelectorAll('.chip.sel').forEach(c=>c.classList.remove('sel'));
+
+      }
+
+      const countEl=document.getElementById('cnt-'+id);
+
+      if(countEl){countEl.textContent='0';countEl.classList.remove('show');}
+
+    });
+
+  }
 
 }
 
@@ -2101,6 +2244,8 @@ Provide: (1) 2-sentence workforce sentiment assessment. (2) Top 3 systemic issue
 // ═══════════════════════════════════════
 
 (function init(){
+
+  populateCityOptions();
 
   if(KIOSK_MODE){ const navBtn=document.getElementById('nav-hr-dash'); if(navBtn) navBtn.style.display='none'; }
 
