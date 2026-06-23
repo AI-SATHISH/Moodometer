@@ -285,6 +285,43 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
 .ptab.active{background:var(--purple);border-color:var(--purple);color:#fff;}
 
+.contact-urgent-banner{background:#FEF2F2;border:2px solid #FECACA;border-radius:12px;padding:16px;margin-bottom:16px;display:none;}
+
+.contact-urgent-title{font-size:14px;font-weight:700;color:#DC2626;margin-bottom:4px;}
+
+.contact-urgent-sub{font-size:12px;color:#EF4444;margin-bottom:12px;}
+
+.contact-card{background:#fff;border:1px solid #FECACA;border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+
+.contact-card.contacted{border-color:#D1FAE5;background:#F0FDF4;opacity:.7;}
+
+/* Contact Resolution Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.modal-field input,.modal-field textarea,.modal-field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--text);}
+.modal-field textarea{resize:vertical;min-height:72px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+/* Resolution record shown in contacted card */
+.resolution-block{background:#F0FDF4;border:1px solid #A7F3D0;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:12px;}
+.resolution-row{display:flex;gap:6px;margin-bottom:3px;line-height:1.5;}
+.resolution-label{color:#065F46;font-weight:600;min-width:110px;flex-shrink:0;}
+.resolution-value{color:#047857;}
+
+.sla-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+
+.sla-green{background:#D1FAE5;color:#065F46;}
+
+.sla-amber{background:#FEF3C7;color:#92400E;}
+
+.sla-red{background:#FEE2E2;color:#991B1B;}
+
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;background:#DC2626;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;min-width:16px;}
+
 /* ── Deploy ── */
 
 .deploy-opt{border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;}
@@ -535,6 +572,18 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
   </div>
 
+  <!-- Urgent Contact Banner -->
+
+  <div class="contact-urgent-banner" id="contact-urgent-banner">
+
+    <div class="contact-urgent-title">🚨 Employees awaiting HR contact</div>
+
+    <div class="contact-urgent-sub" id="contact-urgent-sub"></div>
+
+    <button class="btn btn-sm" style="background:#DC2626;color:#fff;border:none;font-size:12px;" onclick="switchTab('t-followup')">View all & take action →</button>
+
+  </div>
+
   <div class="period-tabs">
 
     <div class="ptab active" onclick="setPeriod('current',this)">Current 15 days</div>
@@ -580,6 +629,8 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
     <div class="tab" onclick="switchTab('t-segments')">Segments</div>
 
     <div class="tab" onclick="switchTab('t-log')">Log</div>
+
+    <div class="tab" id="tab-followup" onclick="switchTab('t-followup')">Follow-up</div>
 
     <div class="tab" onclick="switchTab('t-actions')">Actions 🔴</div>
 
@@ -686,6 +737,35 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
   </div>
 
   <!-- Action Tracker -->
+
+  <!-- Follow-up -->
+
+  <div class="tab-pane" id="t-followup">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:7px;">
+
+      <p style="font-size:13px;font-weight:600;color:var(--text);">Employees who requested HR contact</p>
+
+       <button class="btn" onclick="downloadHRReach()">
+        📥 Download Report
+       </button>
+
+      <select id="followup-filter" onchange="renderFollowup()" style="width:auto;padding:6px 10px;font-size:12px;">
+
+        <option value="pending">Pending</option>
+
+        <option value="contacted">Contacted</option>
+
+        <option value="all">All</option>
+
+      </select>
+
+    </div>
+
+    <div id="followup-list"></div>
+
+
+  </div>
 
   <div class="tab-pane" id="t-actions">
 
@@ -1576,6 +1656,163 @@ function updateActionStat(){
 
 }
 
+// ═══════════════════════════════════════
+// FOLLOW-UP (Contact Requested) SYSTEM
+// ═══════════════════════════════════════
+const HR_EMAIL='hr@urbanrise.in';
+
+// resolutions: { [recordId]: { reason, solution, addressedBy, followupDate, status, resolvedAt } }
+let resolutions={};
+try{ resolutions=JSON.parse(localStorage.getItem('mood_resolutions')||'{}'); }catch(e){}
+function saveResolutions(){ try{ localStorage.setItem('mood_resolutions',JSON.stringify(resolutions)); }catch(e){} }
+
+// Kept for backward compat — derived from resolutions
+function isContacted(id){ return !!resolutions[String(id)]; }
+
+function openContactModal(id){
+  const r=records.find(rec=>String(rec.id)===String(id));
+  if(!r) return;
+  document.getElementById('modal-rec-id').value=String(id);
+  document.getElementById('modal-emp-summary').textContent=
+    `${r.name&&r.name!=='Prefer not to say'?r.name:'Employee'} · ${r.dept} · ${fmtDT(r.ts)}`;
+  document.getElementById('modal-show-empid').textContent=r.empId&&r.empId!=='Prefer not to say'?r.empId:'Not provided';
+  document.getElementById('modal-show-name').textContent=r.name&&r.name!=='Prefer not to say'?r.name:'Not provided';
+  document.getElementById('modal-show-dept').textContent=r.dept||'—';
+  document.getElementById('modal-show-project').textContent=r.project&&r.project!=='General'?r.project:'Not specified';
+
+  // Pre-fill if already resolved
+  const ex=resolutions[String(id)];
+  document.getElementById('modal-reason').value=ex?ex.reason:'';
+  document.getElementById('modal-solution').value=ex?ex.solution:'';
+  document.getElementById('modal-addressedby').value=ex?ex.addressedBy:'';
+  document.getElementById('modal-followup-date').value=ex&&ex.followupDate?ex.followupDate:'';
+  document.getElementById('modal-status').value=ex?ex.status:'resolved';
+  document.getElementById('modal-error').style.display='none';
+  document.getElementById('contact-modal').style.display='flex';
+}
+
+function closeContactModal(){
+  document.getElementById('contact-modal').style.display='none';
+}
+
+function saveContactResolution(){
+  const id=document.getElementById('modal-rec-id').value;
+  const reason=document.getElementById('modal-reason').value.trim();
+  const solution=document.getElementById('modal-solution').value.trim();
+  const addressedBy=document.getElementById('modal-addressedby').value.trim();
+  const followupDate=document.getElementById('modal-followup-date').value;
+  const status=document.getElementById('modal-status').value;
+
+  if(!reason||!solution||!addressedBy){
+    document.getElementById('modal-error').style.display='block'; return;
+  }
+
+  resolutions[id]={ reason, solution, addressedBy, followupDate, status, resolvedAt:new Date().toISOString() };
+  saveResolutions();
+  closeContactModal();
+  renderFollowup();
+  updateFollowupBanner();
+}
+
+
+function slaInfo(ts){
+  const hrs=(Date.now()-new Date(ts).getTime())/3600000;
+  if(hrs<24) return {cls:'sla-green',label:'Today'};
+  if(hrs<48) return {cls:'sla-amber',label:`${Math.floor(hrs)}h ago`};
+  return {cls:'sla-red',label:`${Math.floor(hrs/24)}d overdue`};
+}
+
+function mailEmployee(contactInfo,name,dept){
+  const sub=encodeURIComponent('HR Follow-up — Moodometer Check-in');
+  const body=encodeURIComponent(`Hi ${name&&name!=='Prefer not to say'?name:'there'},\n\nThank you for reaching out through the Moodometer check-in. We noticed you requested a direct conversation with HR.\n\nWe'd like to schedule a brief, confidential discussion at a time that works for you.\n\nPlease reply to this email or call us at your convenience.\n\nWarm regards,\nHR Team — Urban Rise\n${HR_EMAIL}`);
+  window.open(`mailto:${HR_EMAIL}?to=${encodeURIComponent(contactInfo)}&subject=${sub}&body=${body}`);
+}
+
+function callEmployee(phone){
+  window.open(`tel:${phone.replace(/\s/g,'')}`);
+}
+
+function updateFollowupBanner(){
+  const contactReqs=records.filter(r=>r.wantsContact);
+  const pending=contactReqs.filter(r=>!isContacted(r.id));
+  const banner=document.getElementById('contact-urgent-banner');
+  const tab=document.getElementById('tab-followup');
+  if(!banner) return;
+  if(pending.length){
+    banner.style.display='block';
+    const oldest=pending.reduce((a,b)=>new Date(a.ts)<new Date(b.ts)?a:b);
+    const oldestHrs=Math.floor((Date.now()-new Date(oldest.ts).getTime())/3600000);
+    const oldestLabel=oldestHrs<24?'today':oldestHrs<48?`${oldestHrs}h ago`:`${Math.floor(oldestHrs/24)} days ago`;
+    document.getElementById('contact-urgent-sub').textContent=
+      `${pending.length} employee${pending.length>1?'s':''} waiting for HR to reach out — oldest request: ${oldestLabel}`;
+    if(tab) tab.innerHTML=`Follow-up <span class="tab-badge">${pending.length}</span>`;
+  } else {
+    banner.style.display='none';
+    if(tab) tab.textContent='Follow-up ✓';
+  }
+}
+
+const STATUS_LABELS={resolved:'✅ Resolved',monitoring:'👁 Monitoring',escalated:'🔺 Escalated'};
+
+function renderFollowup(){
+  const el=document.getElementById('followup-list');
+  if(!el) return;
+  const filter=document.getElementById('followup-filter')?.value||'pending';
+  const contactReqs=records.filter(r=>r.wantsContact);
+  const filtered=filter==='pending'?contactReqs.filter(r=>!isContacted(r.id)):
+                 filter==='contacted'?contactReqs.filter(r=>isContacted(r.id)):contactReqs;
+  const sorted=[...filtered].sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  if(!sorted.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px 0;"><div style="font-size:36px;margin-bottom:10px;">${filter==='pending'?'✅':'📋'}</div><p style="font-size:14px;color:var(--text3);">${filter==='pending'?'No pending follow-ups — all caught up!':'No contacted records yet.'}</p></div>`;
+    return;
+  }
+  const isLikelyPhone = v => {
+  if(v === null || v === undefined) return false;
+  return /^[\d\s\+\-\(\)]{7,15}$/.test(String(v).trim());
+};
+  el.innerHTML=sorted.map(r=>{
+    const sla=slaInfo(r.ts);
+    const done=isContacted(r.id);
+    const res=resolutions[String(r.id)];
+    const ci=String(r.contactInfo || '');
+    const isPhone=isLikelyPhone(ci);
+    const safeName=(r.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div class="contact-card ${done?'contacted':''}">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+          <span style="font-size:14px;font-weight:700;color:var(--text);">${r.name&&r.name!=='Prefer not to say'?r.name:'Anonymous'}</span>
+          ${r.empId&&r.empId!=='Prefer not to say'?`<span class="badge b-teal">ID: ${r.empId}</span>`:''}
+          <span class="sla-badge ${done?'sla-green':sla.cls}">${done?(STATUS_LABELS[res?.status]||'Contacted'):sla.label}</span>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:3px;">
+          <strong>Dept:</strong> ${r.dept}${r.city?' · '+r.city:''}
+          ${r.project&&r.project!=='General'?` · <strong>Reporting Officer/Team:</strong> ${r.project}`:''}
+        </p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:6px;">Check-in: ${fmtDT(r.ts)} · Mood: ${MOODS[r.mood]?.emoji||''} ${r.moodLabel}</p>
+        ${r.factors.length?`<p style="font-size:11px;color:var(--text3);margin-bottom:6px;">Factors: ${r.factors.map(f=>f.label).join(' · ')}</p>`:''}
+        ${r.freetext?`<p style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:6px;">"${r.freetext}"</p>`:''}
+        ${ci?`<p style="font-size:13px;font-weight:600;color:var(--purple);margin-bottom:8px;">📞 ${ci}</p>`:'<p style="font-size:12px;color:var(--text3);margin-bottom:8px;">No contact details provided</p>'}
+
+        ${res?`<div class="resolution-block">
+          <div style="font-size:11px;font-weight:700;color:#065F46;margin-bottom:7px;letter-spacing:.4px;">RESOLUTION RECORD · ${fmtDT(res.resolvedAt)}</div>
+          <div class="resolution-row"><span class="resolution-label">Reason:</span><span class="resolution-value">${res.reason}</span></div>
+          <div class="resolution-row"><span class="resolution-label">Solution:</span><span class="resolution-value">${res.solution}</span></div>
+          <div class="resolution-row"><span class="resolution-label">Addressed by:</span><span class="resolution-value">${res.addressedBy}</span></div>
+          ${res.followupDate?`<div class="resolution-row"><span class="resolution-label">Follow-up date:</span><span class="resolution-value">${new Date(res.followupDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span></div>`:''}
+          <div class="resolution-row"><span class="resolution-label">Status:</span><span class="resolution-value">${STATUS_LABELS[res.status]||res.status}</span></div>
+        </div>`:''}
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;">
+          ${ci&&isPhone?`<button class="btn btn-primary btn-sm" style="font-size:12px;" onclick="callEmployee('${ci}')">📞 Call</button>`:''}
+          ${ci?`<button class="btn btn-sm" style="font-size:12px;background:#EEF2FF;color:#4F46E5;border:1px solid #C7D2FE;" onclick="mailEmployee('${ci}','${safeName}','${r.dept}')">📧 Email via HR</button>`:''}
+          <button class="btn btn-success btn-sm" style="font-size:12px;" onclick="openContactModal(${r.id})">${done?'✏️ Edit resolution':'✅ Mark as contacted'}</button>
+          ${done?`<button class="btn btn-sm" style="font-size:12px;color:var(--text3);" onclick="unmarkContacted(${r.id})">↩ Mark pending</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderActions(){
 
   const filter=document.getElementById('act-filter')?.value||'';
@@ -1713,6 +1950,10 @@ function renderDash(){
   renderLog(base);
 
   renderActions();
+
+  renderFollowup();
+
+  updateFollowupBanner();
 
   populateLogFilters(records);
 
@@ -2158,7 +2399,7 @@ function switchTab(id){
 
   document.getElementById(id).classList.add('active');
 
-  const order=['t-overview','t-trend','t-factors','t-segments','t-log','t-actions','t-ai'];
+  const order=['t-overview','t-trend','t-factors','t-segments','t-log','t-followup','t-actions','t-ai'];
 
   document.querySelectorAll('.tab')[order.indexOf(id)]?.classList.add('active');
 
@@ -2351,6 +2592,44 @@ Provide: (1) 2-sentence workforce sentiment assessment. (2) Top 3 systemic issue
 
 }
 
+function downloadHRReach(){
+
+  const rows = [[
+    "Employee ID",
+    "Name",
+    "Department",
+    "Reason",
+    "Solution",
+    "Addressed By",
+    "Follow-up Date",
+    "Status"
+  ]];
+
+  Object.values(resolutions).forEach(r => {
+    rows.push([
+      r.employeeId || "",
+      r.employeeName || "",
+      r.department || "",
+      r.reason || "",
+      r.solution || "",
+      r.addressedBy || "",
+      r.followupDate || "",
+      r.status || ""
+    ]);
+  });
+
+  const csv = rows.map(row =>
+    row.map(cell => `"${String(cell ?? "").replace(/"/g,'""')}"`).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csv], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "HR_Followup_Report.csv";
+  a.click();
+}
+
+
 // ═══════════════════════════════════════
 
 // INIT
@@ -2402,6 +2681,61 @@ Provide: (1) 2-sentence workforce sentiment assessment. (2) Top 3 systemic issue
 })();
 
 </script>
+
+<!-- Contact Resolution Modal -->
+<div id="contact-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeContactModal()">
+  <div class="modal-box">
+    <div class="modal-title">📋 Log Contact Resolution</div>
+    <div class="modal-sub" id="modal-emp-summary">Recording follow-up details</div>
+    <input type="hidden" id="modal-rec-id"/>
+
+    <div style="background:#F8FAFC;border-radius:10px;padding:12px 14px;margin-bottom:16px;border:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;letter-spacing:.5px;">EMPLOYEE DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div><span style="font-size:11px;color:var(--text3);">Employee ID</span><p style="font-size:13px;font-weight:600;color:var(--text);" id="modal-show-empid">—</p></div>
+        <div><span style="font-size:11px;color:var(--text3);">Name</span><p style="font-size:13px;font-weight:600;color:var(--text);" id="modal-show-name">—</p></div>
+        <div><span style="font-size:11px;color:var(--text3);">Department</span><p style="font-size:13px;color:var(--text);" id="modal-show-dept">—</p></div>
+        <div><span style="font-size:11px;color:var(--text3);">Reporting Officer / Team</span><p style="font-size:13px;color:var(--text);" id="modal-show-project">—</p></div>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label>Reason for reaching out *</label>
+      <textarea id="modal-reason" placeholder="e.g. Employee flagged excessive workload and burnout risk over past week. Requested HR intervention."></textarea>
+    </div>
+
+    <div class="modal-field">
+      <label>Solution / Action taken *</label>
+      <textarea id="modal-solution" placeholder="e.g. Arranged 1:1 with manager. Task redistribution agreed. Employee given 2 days WFH this week."></textarea>
+    </div>
+
+    <div class="modal-field">
+      <label>Addressed by (HR person handling this) *</label>
+      <input id="modal-addressedby" placeholder="e.g.Beni"/>
+    </div>
+
+    <div class="modal-field">
+      <label>Follow-up date (if any)</label>
+      <input id="modal-followup-date" type="date"/>
+    </div>
+
+    <div class="modal-field">
+      <label>Status</label>
+      <select id="modal-status">
+        <option value="resolved">✅ Resolved — no further action needed</option>
+        <option value="monitoring">👁 Monitoring — checking back next week</option>
+        <option value="escalated">🔺 Escalated — referred to senior HR / management</option>
+      </select>
+    </div>
+
+    <p id="modal-error" style="display:none;font-size:12px;color:var(--red);margin-top:-4px;">Please fill in Reason, Solution, and Addressed by.</p>
+
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeContactModal()" style="color:var(--text3);">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContactResolution()">💾 Save resolution</button>
+    </div>
+  </div>
+</div>
 
 </body>
 
