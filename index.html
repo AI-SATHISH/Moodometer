@@ -349,6 +349,22 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
   </div>
 
+  <div id="draft-banner" style="display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:12px;padding:14px 16px;margin-bottom:14px;display:none;">
+
+    <p style="font-size:13px;font-weight:600;color:#4338CA;margin-bottom:4px;">📋 You have an unfinished check-in</p>
+
+    <p style="font-size:12px;color:#6366F1;margin-bottom:10px;">Started <span id="draft-banner-time"></span> — want to pick up where you left off?</p>
+
+    <div style="display:flex;gap:8px;">
+
+      <button class="btn btn-primary btn-sm" onclick="resumeDraft()">Resume →</button>
+
+      <button class="btn btn-sm" style="background:transparent;border:1px solid #C7D2FE;color:#6366F1;" onclick="discardDraft()">Start fresh</button>
+
+    </div>
+
+  </div>
+
   <div id="step-identity-block">
 
     <p style="font-size:22px;font-weight:600;margin-bottom:3px;">Good <span id="greet"></span> 👋</p>
@@ -363,9 +379,9 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
       <div class="two-col">
 
-        <div class="field"><label>Employee ID (optional)</label><input id="emp-id" placeholder="Prefer not to say"/></div>
+        <div class="field"><label>Employee ID (optional)</label><input id="emp-id" placeholder="e.g. EIN 5286"/></div>
 
-        <div class="field"><label>Name (optional)</label><input id="emp-name" placeholder="Prefer not to say"/></div>
+        <div class="field"><label>Name (optional)</label><input id="emp-name" placeholder="e.g. Sathish Kumar"/></div>
 
       </div>
 
@@ -389,7 +405,7 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 
       </div>
 
-      <div class="field"><label>Project / Team (optional)</label><input id="emp-project" placeholder="e.g. Project Phoenix, Support Team"/></div>
+      <div class="field"><label>Project / Team (optional)</label><input id="emp-project" placeholder="e.g. Chennai Office or Reporting Officer name"/></div>
 
       <p id="identity-error" style="display:none;font-size:12px;color:var(--red);margin:-4px 0 10px;">Please fill in Department and City before continuing.</p>
 
@@ -945,13 +961,17 @@ async function syncFromCloud(){
     try{ data=await res.json(); }
     catch(parseErr){ throw new Error('Response wasn\'t JSON — check Apps Script deployment is "Anyone" access and returns JSON'); }
     if(!data.ok||!Array.isArray(data.records)){ throw new Error(data.error?`Script error: ${data.error}`:'Script responded but with no records array'); }
-    const byId={};
-    records.forEach(r=>byId[r.id]=r);
-    data.records.forEach(r=>{
-      r.id=Number(r.id)||r.id; r.mood=Number(r.mood);
-      byId[r.id]=r;
-    });
-    records=Object.values(byId).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+
+    // Sheet is the source of truth.
+    // Only keep local records that are explicitly flagged _pending
+    // (submitted while offline after the sheet integration was added).
+    // Everything else — including old pre-sheet localStorage records —
+    // is dropped to prevent phantom duplicates in the dashboard.
+    const sheetIds=new Set(data.records.map(r=>String(r.id)));
+    const pendingLocal=records.filter(r=>r._pending===true&&!sheetIds.has(String(r.id)));
+
+    const sheetRecords=data.records.map(r=>({...r,id:Number(r.id)||r.id,mood:Number(r.mood)}));
+    records=[...sheetRecords,...pendingLocal].sort((a,b)=>new Date(b.ts)-new Date(a.ts));
     saveRec();
     syncStatus=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${data.records.length} from sheet`;
   }catch(e){
@@ -961,8 +981,80 @@ async function syncFromCloud(){
 }
 
 // ═══════════════════════════════════════
+// DRAFT AUTO-SAVE
+// Saves progress at each step so the user can close the browser and
+// resume tomorrow. Cleared permanently once the survey is submitted.
+// ═══════════════════════════════════════
+const DRAFT_KEY='mood_draft';
 
-// NAV
+function saveDraft(extra){
+  try{
+    const draft={
+      empId:document.getElementById('emp-id')?document.getElementById('emp-id').value:'',
+      name:document.getElementById('emp-name')?document.getElementById('emp-name').value:'',
+      dept:document.getElementById('emp-dept')?document.getElementById('emp-dept').value:'',
+      city:document.getElementById('emp-city')?document.getElementById('emp-city').value:'',
+      project:document.getElementById('emp-project')?document.getElementById('emp-project').value:'',
+      mood:state.mood||null,
+      moodLabel:state.moodLabel||'',
+      savedAt:new Date().toISOString(),
+      ...extra
+    };
+    localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));
+  }catch(e){}
+}
+
+function clearDraft(){
+  try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
+}
+
+function loadDraft(){
+  try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){ return null; }
+}
+
+function restoreDraftBanner(){
+  const draft=loadDraft();
+  if(!draft) return;
+  const banner=document.getElementById('draft-banner');
+  if(!banner) return;
+  const when=new Date(draft.savedAt);
+  const label=when.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+' at '+when.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('draft-banner-time').textContent=label;
+  banner.style.display='block';
+}
+
+function resumeDraft(){
+  const draft=loadDraft();
+  if(!draft) return;
+  // Restore Step 1 fields
+  if(document.getElementById('emp-id')) document.getElementById('emp-id').value=draft.empId||'';
+  if(document.getElementById('emp-name')) document.getElementById('emp-name').value=draft.name||'';
+  if(document.getElementById('emp-dept')) document.getElementById('emp-dept').value=draft.dept||'';
+  if(document.getElementById('emp-city')) document.getElementById('emp-city').value=draft.city||'';
+  if(document.getElementById('emp-project')) document.getElementById('emp-project').value=draft.project||'';
+  // Restore mood if saved
+  if(draft.mood){
+    state.mood=draft.mood; state.moodLabel=draft.moodLabel;
+    document.querySelectorAll('.mood-btn').forEach(b=>{
+      if(parseInt(b.dataset.mood)===draft.mood) b.classList.add('selected');
+    });
+    document.getElementById('mood-next').disabled=false;
+  }
+  document.getElementById('draft-banner').style.display='none';
+  // Jump straight to where they left off
+  if(draft.dept&&draft.city){
+    state.dept=draft.dept; state.city=draft.city; state.project=draft.project||'General';
+    state.empId=draft.empId||'Prefer not to say'; state.name=draft.name||'Prefer not to say';
+    if(draft.mood){ goFactors(); } else { showScreen('screen-mood'); }
+  }
+}
+
+function discardDraft(){
+  clearDraft();
+  document.getElementById('draft-banner').style.display='none';
+}
+
+
 
 // ═══════════════════════════════════════
 
@@ -1050,6 +1142,8 @@ function goCheckin(){
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
 
   state.mood=null; state.allowAnother=false; document.getElementById('mood-next').disabled=true;
+
+  restoreDraftBanner();
 
 }
 
@@ -1155,6 +1249,8 @@ function startCheckin(){
 
   state.project=project||'General';
 
+  saveDraft();
+
   showScreen('screen-mood');
 
 }
@@ -1181,6 +1277,8 @@ function selectMood(el){
   state.moodLabel=el.dataset.label;
 
   document.getElementById('mood-next').disabled=false;
+
+  saveDraft();
 
 }
 
@@ -1210,9 +1308,11 @@ function buildFactorArea(){
 
   const buildSection=(type,tiles,label,labelColor)=>{
 
+    const cols=tiles.length<=4?2:3;
+
     html+=`<div class="tile-section-label" style="color:${labelColor};">${label}</div>`;
 
-    html+=`<div class="tile-grid">`;
+    html+=`<div class="tile-grid" style="grid-template-columns:repeat(${cols},1fr);">`;
 
     tiles.forEach((g,i)=>{
 
@@ -1234,7 +1334,7 @@ function buildFactorArea(){
 
     });
 
-    html+=`<div class="tile none-tile" id="none-${type}" onclick="toggleNone('${type}')" style="grid-column:span 2;">
+    html+=`<div class="tile none-tile" id="none-${type}" onclick="toggleNone('${type}')" style="grid-column:1/-1;">
 
         <div class="tile-icon">🚫</div>
 
@@ -1386,9 +1486,9 @@ function submitCheckin(){
 
   state.contactInfo=state.wantsContact?document.getElementById('contact-info').value.trim():'';
 
-  const rec={id:Date.now(),ts:new Date().toISOString(),deviceId:DEVICE_ID,empId:state.empId,name:state.name,dept:state.dept,city:state.city,project:state.project,mood:state.mood,moodLabel:state.moodLabel,factors:state.factors,freetext:state.freetext,wantsContact:state.wantsContact,contactInfo:state.contactInfo};
+  const rec={id:Date.now(),ts:new Date().toISOString(),deviceId:DEVICE_ID,empId:state.empId,name:state.name,dept:state.dept,city:state.city,project:state.project,mood:state.mood,moodLabel:state.moodLabel,factors:state.factors,freetext:state.freetext,wantsContact:state.wantsContact,contactInfo:state.contactInfo,_pending:true};
 
-  records.unshift(rec); saveRec(); postCheckinToCloud(rec); state.allowAnother=false;
+  records.unshift(rec); saveRec(); postCheckinToCloud(rec); state.allowAnother=false; clearDraft();
 
   document.getElementById('thanks-emoji').textContent=state.mood>=4?'🎉':'✅';
 
@@ -2262,6 +2362,8 @@ Provide: (1) 2-sentence workforce sentiment assessment. (2) Top 3 systemic issue
   populateCityOptions();
 
   if(KIOSK_MODE){ const navBtn=document.getElementById('nav-hr-dash'); if(navBtn) navBtn.style.display='none'; }
+
+  restoreDraftBanner();
 
   const h=new Date().getHours();
 
